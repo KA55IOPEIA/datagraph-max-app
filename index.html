@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DataGraph</title>
+<!-- MAX Bridge: даёт странице window.WebApp — кто открыл, платформа, кнопка «Назад», сканер QR -->
+<script src="https://st.max.ru/js/max-web-app.js"></script>
+<style>
+  :root {
+    --bg: #F2F3F5; --card: #FFFFFF; --text: #14161A; --muted: #5F6672; --line: #EEF0F3;
+    --accent: #2563EB; --ok: #15803D; --ok-bg: #F0FDF4; --warn: #B45309; --warn-bg: #FFFBEB;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0F1115; --card: #1A1D23; --text: #F2F3F5; --muted: #A3A9B4; --line: #2A2E36;
+      --accent: #6EA0FF; --ok: #4ADE80; --ok-bg: #12261A; --warn: #FBBF24; --warn-bg: #2A2110;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  h1 { margin: 0 0 4px; font-size: 28px; line-height: 34px; letter-spacing: -0.02em; }
+  .sub { margin: 0 0 20px; color: var(--muted); font-size: 15px; }
+  .card { background: var(--card); border-radius: 20px; padding: 18px; margin-bottom: 12px; }
+  .status { display: flex; gap: 12px; align-items: center; }
+  .status.ok { background: var(--ok-bg); color: var(--ok); }
+  .status.warn { background: var(--warn-bg); color: var(--warn); }
+  .status b { display: block; font-size: 17px; }
+  .status span { color: var(--text); font-size: 14px; }
+  .hello { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+  .muted { color: var(--muted); font-size: 14px; margin: 0; }
+  dl { margin: 0; display: grid; grid-template-columns: auto 1fr; }
+  dt, dd { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  dt { color: var(--muted); padding-right: 16px; }
+  dd { text-align: right; word-break: break-all; }
+  dl > :nth-last-child(-n+2) { border-bottom: none; }
+  h2 { font-size: 17px; margin: 0 0 12px; }
+  button {
+    width: 100%; height: 48px; border: none; border-radius: 14px; margin-top: 8px;
+    background: var(--bg); color: var(--text); font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: #fff; }
+  #log { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; }
+  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 16px; }
+</style>
+</head>
+<body>
+  <h1>DataGraph</h1>
+  <p class="sub">Скоро здесь будет приложение DataGraph — смены, станки и уведомления в одном экране.</p>
+
+  <div id="status" class="card status warn">
+    <div><b>Проверяю связь с MAX…</b><span id="statusText"></span></div>
+  </div>
+
+  <div class="card" id="userCard" hidden>
+    <p class="hello" id="hello"></p>
+    <p class="muted">Бот работает как обычно — это тестовая страница.</p>
+  </div>
+
+  <div class="card">
+    <h2>Технические данные для проверки</h2>
+    <dl id="facts"></dl>
+  </div>
+
+  <div class="card">
+    <h2>Проверка возможностей MAX</h2>
+    <button type="button" id="btnBack">Показать кнопку «Назад»</button>
+    <button type="button" id="btnQr">Открыть сканер QR-кода</button>
+    <div id="log" aria-live="polite"></div>
+  </div>
+
+  <footer>Тестовая страница мини-приложения · <span id="ver">v1</span></footer>
+
+<script>
+(function () {
+  var WA = window.WebApp || null;
+  var $ = function (id) { return document.getElementById(id); };
+  var log = function (t) { $('log').textContent = t; };
+
+  // --- что MAX передал странице ---
+  var unsafe = (WA && WA.initDataUnsafe) || {};
+  var user = unsafe.user || null;
+  var chat = unsafe.chat || null;
+  var raw = (WA && WA.initData) || '';
+  var keys = [];
+  try { keys = raw ? Array.from(new URLSearchParams(raw).keys()) : []; } catch (e) { keys = []; }
+  var signed = keys.indexOf('hash') !== -1;
+
+  var facts = [
+    ['Библиотека MAX', WA ? 'загружена' : 'не загружена'],
+    ['Платформа', (WA && WA.platform) || '—'],
+    ['Версия MAX', (WA && WA.version) || '—'],
+    ['Устройство', (WA && WA.deviceName) || '—'],
+    ['ID пользователя', user && user.id != null ? String(user.id) : '—'],
+    ['Чат', chat ? (chat.type || '') + ' ' + (chat.id != null ? chat.id : '') : '—'],
+    ['Данные с подписью', raw ? (signed ? 'есть (' + raw.length + ' симв.)' : 'есть, но без подписи') : 'нет'],
+    ['Поля', keys.length ? keys.join(', ') : '—'],
+    ['Параметр запуска', unsafe.start_param ? String(unsafe.start_param) : '—']
+  ];
+  var dl = $('facts');
+  facts.forEach(function (f) {
+    var dt = document.createElement('dt'); dt.textContent = f[0];
+    var dd = document.createElement('dd'); dd.textContent = f[1];
+    dl.appendChild(dt); dl.appendChild(dd);
+  });
+
+  // --- итог проверки ---
+  if (WA && user) {
+    $('status').className = 'card status ok';
+    $('status').querySelector('b').textContent = 'Мини-приложение открыто из MAX';
+    $('statusText').textContent = signed ? 'MAX передал данные пользователя с подписью — сервер сможет его опознать.' : 'Данные пользователя пришли, подписи не видно.';
+    $('userCard').hidden = false;
+    var name = [user.first_name, user.last_name].filter(Boolean).join(' ');
+    $('hello').textContent = 'Здравствуйте' + (name ? ', ' + name : '') + '!';
+  } else if (WA) {
+    $('statusText').textContent = 'Библиотека MAX есть, но данных пользователя нет. Откройте страницу кнопкой из бота.';
+  } else {
+    $('statusText').textContent = 'Похоже, страница открыта не в MAX. Откройте её кнопкой «Открыть» в чате бота DataGraph.';
+  }
+
+  // --- кнопка «Назад» MAX ---
+  var backShown = false;
+  var onBack = function () { log('Нажата системная кнопка «Назад» — её можно использовать для навигации.'); };
+  $('btnBack').addEventListener('click', function () {
+    if (!WA || !WA.BackButton) { log('Кнопка «Назад» недоступна (страница не в MAX).'); return; }
+    try {
+      if (!backShown) { WA.BackButton.onClick(onBack); WA.BackButton.show(); backShown = true; this.textContent = 'Скрыть кнопку «Назад»'; log('Кнопка «Назад» должна появиться в шапке MAX.'); }
+      else { WA.BackButton.offClick(onBack); WA.BackButton.hide(); backShown = false; this.textContent = 'Показать кнопку «Назад»'; log('Кнопка «Назад» скрыта.'); }
+    } catch (e) { log('Ошибка: ' + (e && e.message ? e.message : e)); }
+  });
+
+  // --- сканер QR ---
+  $('btnQr').addEventListener('click', function () {
+    if (!WA || typeof WA.openCodeReader !== 'function') { log('Сканер недоступен (страница не в MAX).'); return; }
+    try {
+      Promise.resolve(WA.openCodeReader(true)).then(function (res) {
+        var v = res && (res.value != null ? res.value : res);
+        log(v ? 'Отсканировано: ' + String(v).slice(0, 200) : 'Сканирование отменено.');
+      }).catch(function (e) { log('Сканер: ' + (e && (e.message || e.code) ? (e.message || e.code) : JSON.stringify(e))); });
+    } catch (e) { log('Ошибка: ' + (e && e.message ? e.message : e)); }
+  });
+})();
+</script>
+</body>
+</html>
