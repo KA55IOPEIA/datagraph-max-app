@@ -135,7 +135,7 @@
     <summary>Технические данные</summary>
     <dl id="facts"></dl>
   </details>
-  <footer>Мини-приложение DataGraph · v2</footer>
+  <footer>Мини-приложение DataGraph · v2.1</footer>
 </main>
 
 <script>
@@ -190,6 +190,17 @@
   function showError(title, text) {
     $('errTitle').textContent = title; $('errText').textContent = text; show('vError');
   }
+  // Диагностика от сервера (без секретов: форма данных MAX) — в «Технические данные»
+  function showDebug(debug) {
+    if (!debug) return;
+    Object.keys(debug).forEach(function (k) {
+      var v = debug[k];
+      var dt = document.createElement('dt'); dt.textContent = k;
+      var dd = document.createElement('dd'); dd.textContent = Array.isArray(v) ? v.join(', ') : String(v);
+      $('facts').appendChild(dt); $('facts').appendChild(dd);
+    });
+    $('tech').open = true;
+  }
 
   // ---------- экраны ----------
   function fmtUntil(iso) {
@@ -232,7 +243,7 @@
     }
     show('vLoading');
     call('me').then(function (data) {
-      if (!data.ok) { showError('Не получилось', data.message || 'Ошибка сервера.'); return; }
+      if (!data.ok) { showError('Не получилось', data.message || 'Ошибка сервера.'); showDebug(data.debug); return; }
       render(data);
     }).catch(function (e) { showError('Нет связи', netError(e)); });
   }
@@ -255,7 +266,7 @@
     call('login', { email: email, password: password, remember: canRemember && $('remember').checked ? '1' : '0' })
       .then(function (data) {
         if (data.ok) { $('password').value = ''; render(data, { justLoggedIn: true }); return; }
-        if (data.error === 'bad_signature' || data.error === 'init_expired') { showError('Откройте заново', data.message); return; }
+        if (data.error === 'bad_signature' || data.error === 'init_expired') { showError('Откройте заново', data.message); showDebug(data.debug); return; }
         err.textContent = data.message || 'Не удалось войти.'; err.hidden = false;
         if (data.error === 'bad_credentials') { $('password').value = ''; $('password').focus(); }
       })
