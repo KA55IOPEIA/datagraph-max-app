@@ -4,17 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>DataGraph</title>
-<!-- MAX Bridge: даёт странице window.WebApp — кто открыл, платформа, кнопка «Назад», сканер QR -->
+<!-- MAX Bridge: даёт странице window.WebApp — кто открыл (initData с подписью), платформа, кнопка «Назад» -->
 <script src="https://st.max.ru/js/max-web-app.js"></script>
 <style>
   :root {
-    --bg: #F2F3F5; --card: #FFFFFF; --text: #14161A; --muted: #5F6672; --line: #EEF0F3;
-    --accent: #2563EB; --ok: #15803D; --ok-bg: #F0FDF4; --warn: #B45309; --warn-bg: #FFFBEB;
+    --bg: #F2F3F5; --card: #FFFFFF; --text: #14161A; --muted: #5F6672; --line: #E3E6EA; --field: #F6F7F9;
+    --accent: #2563EB; --accent-text: #FFFFFF; --ok: #15803D; --ok-bg: #F0FDF4;
+    --warn: #B45309; --warn-bg: #FFFBEB; --err: #B91C1C; --err-bg: #FEF2F2;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0F1115; --card: #1A1D23; --text: #F2F3F5; --muted: #A3A9B4; --line: #2A2E36;
-      --accent: #6EA0FF; --ok: #4ADE80; --ok-bg: #12261A; --warn: #FBBF24; --warn-bg: #2A2110;
+      --bg: #0F1115; --card: #1A1D23; --text: #F2F3F5; --muted: #A3A9B4; --line: #2E333B; --field: #22262D;
+      --accent: #6EA0FF; --accent-text: #0F1115; --ok: #4ADE80; --ok-bg: #12261A;
+      --warn: #FBBF24; --warn-bg: #2A2110; --err: #F87171; --err-bg: #2A1414;
     }
   }
   * { box-sizing: border-box; }
@@ -23,126 +25,258 @@
     font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
     padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
   }
+  main { max-width: 520px; margin: 0 auto; }
   h1 { margin: 0 0 4px; font-size: 28px; line-height: 34px; letter-spacing: -0.02em; }
   .sub { margin: 0 0 20px; color: var(--muted); font-size: 15px; }
   .card { background: var(--card); border-radius: 20px; padding: 18px; margin-bottom: 12px; }
-  .status { display: flex; gap: 12px; align-items: center; }
-  .status.ok { background: var(--ok-bg); color: var(--ok); }
-  .status.warn { background: var(--warn-bg); color: var(--warn); }
-  .status b { display: block; font-size: 17px; }
-  .status span { color: var(--text); font-size: 14px; }
-  .hello { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+  .card h2 { font-size: 20px; margin: 0 0 4px; }
   .muted { color: var(--muted); font-size: 14px; margin: 0; }
-  dl { margin: 0; display: grid; grid-template-columns: auto 1fr; }
+  .note { border-radius: 14px; padding: 12px 14px; font-size: 14px; margin: 0 0 14px; }
+  .note.ok { background: var(--ok-bg); color: var(--ok); }
+  .note.warn { background: var(--warn-bg); color: var(--warn); }
+  .note.err { background: var(--err-bg); color: var(--err); }
+  label.field { display: block; font-size: 14px; color: var(--muted); margin: 14px 0 6px; }
+  .input-wrap { position: relative; }
+  input[type=email], input[type=password], input[type=text] {
+    width: 100%; height: 48px; border-radius: 14px; border: 1px solid var(--line); background: var(--field);
+    color: var(--text); font: inherit; padding: 0 14px;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .input-wrap input { padding-right: 96px; }
+  .eye { position: absolute; right: 6px; top: 6px; height: 36px; width: auto; margin: 0; padding: 0 12px;
+         background: transparent; color: var(--accent); font-size: 14px; font-weight: 600; }
+  .check { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 4px; cursor: pointer; }
+  .check input { width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--accent); flex: none; }
+  .check b { display: block; font-weight: 600; }
+  .check span { color: var(--muted); font-size: 13px; }
+  button {
+    width: 100%; height: 48px; border: none; border-radius: 14px; margin-top: 14px;
+    background: var(--field); color: var(--text); font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: var(--accent-text); }
+  button.danger { color: var(--err); }
+  button:disabled { opacity: .6; cursor: default; }
+  dl { margin: 14px 0 0; display: grid; grid-template-columns: auto 1fr; }
   dt, dd { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
   dt { color: var(--muted); padding-right: 16px; }
-  dd { text-align: right; word-break: break-all; }
+  dd { text-align: right; word-break: break-word; }
   dl > :nth-last-child(-n+2) { border-bottom: none; }
-  h2 { font-size: 17px; margin: 0 0 12px; }
-  button {
-    width: 100%; height: 48px; border: none; border-radius: 14px; margin-top: 8px;
-    background: var(--bg); color: var(--text); font: inherit; font-weight: 600; cursor: pointer;
-  }
-  button.primary { background: var(--accent); color: #fff; }
-  #log { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; }
-  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 16px; }
+  .row2 { display: flex; gap: 8px; }
+  .row2 button { flex: 1; }
+  details { margin-top: 8px; color: var(--muted); font-size: 13px; }
+  details summary { cursor: pointer; padding: 6px 0; }
+  details dl dt, details dl dd { font-size: 13px; padding: 6px 0; }
+  .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent);
+             animation: spin .8s linear infinite; margin: 8px auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  [hidden] { display: none !important; }
+  footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 16px; }
 </style>
 </head>
 <body>
+<main>
   <h1>DataGraph</h1>
-  <p class="sub">Скоро здесь будет приложение DataGraph — смены, станки и уведомления в одном экране.</p>
+  <p class="sub">Смены, станки и уведомления — скоро в одном экране.</p>
 
-  <div id="status" class="card status warn">
-    <div><b>Проверяю связь с MAX…</b><span id="statusText"></span></div>
-  </div>
+  <!-- загрузка -->
+  <section class="card" id="vLoading">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="muted" style="text-align:center">Проверяю вход…</p>
+  </section>
 
-  <div class="card" id="userCard" hidden>
-    <p class="hello" id="hello"></p>
-    <p class="muted">Бот работает как обычно — это тестовая страница.</p>
-  </div>
+  <!-- ошибка / открыто не из MAX -->
+  <section class="card" id="vError" hidden>
+    <h2 id="errTitle">Не получилось</h2>
+    <p class="muted" id="errText"></p>
+    <button type="button" id="btnRetry">Повторить</button>
+  </section>
 
-  <div class="card">
-    <h2>Технические данные для проверки</h2>
+  <!-- форма входа -->
+  <section class="card" id="vLogin" hidden>
+    <h2>Вход в DataGraph</h2>
+    <p class="muted">Те же email и пароль, что на сайте app.data-graph.ru.</p>
+    <form id="loginForm" novalidate>
+      <div class="note warn" id="expiredNote" hidden style="margin-top:14px">Сессия DataGraph закончилась — войдите снова.</div>
+      <label class="field" for="email">Email</label>
+      <input id="email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+      <label class="field" for="password">Пароль</label>
+      <div class="input-wrap">
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button type="button" class="eye" id="btnEye" aria-label="Показать пароль">Показать</button>
+      </div>
+      <label class="check" id="rememberRow" hidden>
+        <input type="checkbox" id="remember">
+        <div><b>Запомнить меня</b><span>Бот сохранит пароль в зашифрованном виде и будет сам входить заново, когда сессия DataGraph закончится (она длится сутки). «Выйти» стирает его.</span></div>
+      </label>
+      <div class="note err" id="loginError" hidden style="margin-top:14px"></div>
+      <button type="submit" class="primary" id="btnLogin">Войти</button>
+    </form>
+    <p class="muted" style="margin-top:12px;font-size:13px">Пароль уходит в DataGraph по защищённому соединению и не остаётся в переписке с ботом.</p>
+  </section>
+
+  <!-- профиль -->
+  <section class="card" id="vProfile" hidden>
+    <div class="note ok" id="loginDone" hidden></div>
+    <h2 id="pName">—</h2>
+    <p class="muted" id="pRole"></p>
+    <dl>
+      <dt>Email</dt><dd id="pEmail">—</dd>
+      <dt>Сессия DataGraph</dt><dd id="pUntil">—</dd>
+      <dt>Запомнить меня</dt><dd id="pRemember">—</dd>
+    </dl>
+    <button type="button" class="danger" id="btnLogout">Выйти</button>
+    <div class="row2" id="logoutConfirm" hidden>
+      <button type="button" id="btnLogoutNo">Отмена</button>
+      <button type="button" class="danger" id="btnLogoutYes">Да, выйти</button>
+    </div>
+  </section>
+
+  <details id="tech">
+    <summary>Технические данные</summary>
     <dl id="facts"></dl>
-  </div>
-
-  <div class="card">
-    <h2>Проверка возможностей MAX</h2>
-    <button type="button" id="btnBack">Показать кнопку «Назад»</button>
-    <button type="button" id="btnQr">Открыть сканер QR-кода</button>
-    <div id="log" aria-live="polite"></div>
-  </div>
-
-  <footer>Тестовая страница мини-приложения · <span id="ver">v1</span></footer>
+  </details>
+  <footer>Мини-приложение DataGraph · v2</footer>
+</main>
 
 <script>
 (function () {
+  'use strict';
+  // API мини-приложения — Workflow 9 в n8n
+  var API = 'https://extra-n8n.tw1.ru/webhook/max-miniapp';
+
   var WA = window.WebApp || null;
   var $ = function (id) { return document.getElementById(id); };
-  var log = function (t) { $('log').textContent = t; };
+  var initData = (WA && WA.initData) || '';
+  var canRemember = false;
+  var views = ['vLoading', 'vError', 'vLogin', 'vProfile'];
+  var show = function (id) { views.forEach(function (v) { $(v).hidden = v !== id; }); };
 
-  // --- что MAX передал странице ---
-  var unsafe = (WA && WA.initDataUnsafe) || {};
-  var user = unsafe.user || null;
-  var chat = unsafe.chat || null;
-  var raw = (WA && WA.initData) || '';
-  var keys = [];
-  try { keys = raw ? Array.from(new URLSearchParams(raw).keys()) : []; } catch (e) { keys = []; }
-  var signed = keys.indexOf('hash') !== -1;
+  // ---------- технические данные (для проверки, свёрнуты) ----------
+  (function () {
+    var u = (WA && WA.initDataUnsafe) || {};
+    var keys = [];
+    try { keys = initData ? Array.from(new URLSearchParams(initData).keys()) : []; } catch (e) { keys = []; }
+    [['Библиотека MAX', WA ? 'загружена' : 'не загружена'],
+     ['Платформа', (WA && WA.platform) || '—'],
+     ['Версия MAX', (WA && WA.version) || '—'],
+     ['ID пользователя MAX', u.user && u.user.id != null ? String(u.user.id) : '—'],
+     ['Поля initData', keys.length ? keys.join(', ') : '—']
+    ].forEach(function (f) {
+      var dt = document.createElement('dt'); dt.textContent = f[0];
+      var dd = document.createElement('dd'); dd.textContent = f[1];
+      $('facts').appendChild(dt); $('facts').appendChild(dd);
+    });
+  })();
 
-  var facts = [
-    ['Библиотека MAX', WA ? 'загружена' : 'не загружена'],
-    ['Платформа', (WA && WA.platform) || '—'],
-    ['Версия MAX', (WA && WA.version) || '—'],
-    ['Устройство', (WA && WA.deviceName) || '—'],
-    ['ID пользователя', user && user.id != null ? String(user.id) : '—'],
-    ['Чат', chat ? (chat.type || '') + ' ' + (chat.id != null ? chat.id : '') : '—'],
-    ['Данные с подписью', raw ? (signed ? 'есть (' + raw.length + ' симв.)' : 'есть, но без подписи') : 'нет'],
-    ['Поля', keys.length ? keys.join(', ') : '—'],
-    ['Параметр запуска', unsafe.start_param ? String(unsafe.start_param) : '—']
-  ];
-  var dl = $('facts');
-  facts.forEach(function (f) {
-    var dt = document.createElement('dt'); dt.textContent = f[0];
-    var dd = document.createElement('dd'); dd.textContent = f[1];
-    dl.appendChild(dt); dl.appendChild(dd);
-  });
-
-  // --- итог проверки ---
-  if (WA && user) {
-    $('status').className = 'card status ok';
-    $('status').querySelector('b').textContent = 'Мини-приложение открыто из MAX';
-    $('statusText').textContent = signed ? 'MAX передал данные пользователя с подписью — сервер сможет его опознать.' : 'Данные пользователя пришли, подписи не видно.';
-    $('userCard').hidden = false;
-    var name = [user.first_name, user.last_name].filter(Boolean).join(' ');
-    $('hello').textContent = 'Здравствуйте' + (name ? ', ' + name : '') + '!';
-  } else if (WA) {
-    $('statusText').textContent = 'Библиотека MAX есть, но данных пользователя нет. Откройте страницу кнопкой из бота.';
-  } else {
-    $('statusText').textContent = 'Похоже, страница открыта не в MAX. Откройте её кнопкой «Открыть» в чате бота DataGraph.';
+  // ---------- запрос к API ----------
+  // form-urlencoded — «простой» запрос, браузер не шлёт предварительный OPTIONS
+  function call(action, extra) {
+    var body = new URLSearchParams(Object.assign({ init: initData, action: action }, extra || {}));
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 45000) : null;
+    return fetch(API, { method: 'POST', body: body, signal: ctrl ? ctrl.signal : undefined, cache: 'no-store' })
+      .then(function (res) {
+        return res.json().catch(function () { return null; }).then(function (data) {
+          if (!data) throw new Error('Сервер ответил ' + res.status + ' без данных.');
+          return data;
+        });
+      })
+      .finally(function () { if (timer) clearTimeout(timer); });
+  }
+  function netError(e) {
+    return e && e.name === 'AbortError' ? 'Сервер долго не отвечает. Попробуйте ещё раз.'
+         : 'Не удалось связаться с сервером бота. Проверьте интернет и попробуйте ещё раз.';
+  }
+  function showError(title, text) {
+    $('errTitle').textContent = title; $('errText').textContent = text; show('vError');
   }
 
-  // --- кнопка «Назад» MAX ---
-  var backShown = false;
-  var onBack = function () { log('Нажата системная кнопка «Назад» — её можно использовать для навигации.'); };
-  $('btnBack').addEventListener('click', function () {
-    if (!WA || !WA.BackButton) { log('Кнопка «Назад» недоступна (страница не в MAX).'); return; }
-    try {
-      if (!backShown) { WA.BackButton.onClick(onBack); WA.BackButton.show(); backShown = true; this.textContent = 'Скрыть кнопку «Назад»'; log('Кнопка «Назад» должна появиться в шапке MAX.'); }
-      else { WA.BackButton.offClick(onBack); WA.BackButton.hide(); backShown = false; this.textContent = 'Показать кнопку «Назад»'; log('Кнопка «Назад» скрыта.'); }
-    } catch (e) { log('Ошибка: ' + (e && e.message ? e.message : e)); }
+  // ---------- экраны ----------
+  function fmtUntil(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d)) return '—';
+    return 'до ' + d.toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  }
+  function render(data, opts) {
+    opts = opts || {};
+    canRemember = !!data.can_remember;
+    var p = data.profile || { state: 'not_authorized' };
+    if (p.state === 'authorized') {
+      $('pName').textContent = p.full_name || p.email || 'Вы вошли';
+      $('pRole').textContent = p.role || '';
+      $('pEmail').textContent = p.email || '—';
+      $('pUntil').textContent = fmtUntil(p.session_until);
+      $('pRemember').textContent = p.remember ? 'да — бот продлит сам' : 'нет';
+      $('loginDone').hidden = !opts.justLoggedIn;
+      $('loginDone').textContent = data.notified
+        ? 'Вход выполнен. В чате бота — кнопка «Открыть панель».'
+        : 'Вход выполнен.';
+      $('logoutConfirm').hidden = true; $('btnLogout').hidden = false;
+      show('vProfile');
+    } else {
+      $('expiredNote').hidden = p.state !== 'session_expired';
+      if (p.login_hint && !$('email').value) $('email').value = p.login_hint;
+      $('rememberRow').hidden = !canRemember;
+      $('loginError').hidden = true;
+      $('password').value = '';
+      show('vLogin');
+    }
+  }
+
+  function load() {
+    if (!WA || !initData) {
+      showError('Откройте из MAX', 'Эта страница работает внутри MAX: откройте чат бота DataGraph и нажмите «Открыть».');
+      $('btnRetry').hidden = true;
+      return;
+    }
+    show('vLoading');
+    call('me').then(function (data) {
+      if (!data.ok) { showError('Не получилось', data.message || 'Ошибка сервера.'); return; }
+      render(data);
+    }).catch(function (e) { showError('Нет связи', netError(e)); });
+  }
+
+  // ---------- вход ----------
+  $('btnEye').addEventListener('click', function () {
+    var pw = $('password'); var hidden = pw.type === 'password';
+    pw.type = hidden ? 'text' : 'password';
+    this.textContent = hidden ? 'Скрыть' : 'Показать';
+    this.setAttribute('aria-label', hidden ? 'Скрыть пароль' : 'Показать пароль');
+  });
+  $('loginForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var email = $('email').value.trim(), password = $('password').value;
+    var err = $('loginError');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Проверьте email.'; err.hidden = false; $('email').focus(); return; }
+    if (!password) { err.textContent = 'Введите пароль.'; err.hidden = false; $('password').focus(); return; }
+    err.hidden = true;
+    var btn = $('btnLogin'); btn.disabled = true; btn.textContent = 'Вхожу…';
+    call('login', { email: email, password: password, remember: canRemember && $('remember').checked ? '1' : '0' })
+      .then(function (data) {
+        if (data.ok) { $('password').value = ''; render(data, { justLoggedIn: true }); return; }
+        if (data.error === 'bad_signature' || data.error === 'init_expired') { showError('Откройте заново', data.message); return; }
+        err.textContent = data.message || 'Не удалось войти.'; err.hidden = false;
+        if (data.error === 'bad_credentials') { $('password').value = ''; $('password').focus(); }
+      })
+      .catch(function (e) { err.textContent = netError(e); err.hidden = false; })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Войти'; });
   });
 
-  // --- сканер QR ---
-  $('btnQr').addEventListener('click', function () {
-    if (!WA || typeof WA.openCodeReader !== 'function') { log('Сканер недоступен (страница не в MAX).'); return; }
-    try {
-      Promise.resolve(WA.openCodeReader(true)).then(function (res) {
-        var v = res && (res.value != null ? res.value : res);
-        log(v ? 'Отсканировано: ' + String(v).slice(0, 200) : 'Сканирование отменено.');
-      }).catch(function (e) { log('Сканер: ' + (e && (e.message || e.code) ? (e.message || e.code) : JSON.stringify(e))); });
-    } catch (e) { log('Ошибка: ' + (e && e.message ? e.message : e)); }
+  // ---------- выход (подтверждение прямо в карточке) ----------
+  $('btnLogout').addEventListener('click', function () { this.hidden = true; $('logoutConfirm').hidden = false; });
+  $('btnLogoutNo').addEventListener('click', function () { $('logoutConfirm').hidden = true; $('btnLogout').hidden = false; });
+  $('btnLogoutYes').addEventListener('click', function () {
+    var btn = this; btn.disabled = true;
+    call('logout').then(function (data) {
+      if (!data.ok) { showError('Не получилось', data.message || 'Ошибка сервера.'); return; }
+      $('remember').checked = false; render(data);
+    }).catch(function (e) { showError('Нет связи', netError(e)); })
+      .finally(function () { btn.disabled = false; });
   });
+
+  $('btnRetry').addEventListener('click', load);
+  load();
 })();
 </script>
 </body>
