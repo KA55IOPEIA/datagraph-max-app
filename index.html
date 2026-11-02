@@ -48,6 +48,20 @@
   .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
   .icon-btn { width: 44px; height: 44px; border: none; border-radius: 14px; background: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
   .icon-btn svg { width: 20px; height: 20px; }
+  .icon-btn { position: relative; }
+  .badge { position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--c-off); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+  .head-actions { display: flex; gap: 8px; }
+  .ntf { display: flex; gap: 10px; padding: 12px 0; border: none; border-bottom: 1px solid var(--line); background: none; width: 100%; text-align: left; cursor: pointer; }
+  .ntf:last-child { border-bottom: none; }
+  .ntf .u { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; margin-top: 7px; }
+  .ntf .u.read { background: transparent; }
+  .ntf b { display: block; font-weight: 600; font-size: 15px; }
+  .ntf .sub { display: block; font-size: 13px; color: var(--muted); }
+  .grp-head { display: flex; align-items: center; gap: 8px; }
+  .grp-head .lbl { font-weight: 700; font-size: 13px; letter-spacing: .03em; text-transform: uppercase; }
+  .cnt { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--field); color: var(--muted); }
+  .cnt.hot { background: var(--accent); color: var(--accent-text); }
+  .linkbtn { border: none; background: none; color: var(--accent); font-weight: 600; font-size: 14px; cursor: pointer; padding: 6px 0; }
   .spin { animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; margin: 8px auto; }
@@ -55,6 +69,13 @@
   .btn.primary { background: var(--accent); color: var(--accent-text); }
   .btn.danger { color: var(--err); }
   .btn:disabled { opacity: .55; cursor: default; }
+  .toast { position: fixed; left: 16px; right: 16px; top: calc(10px + env(safe-area-inset-top)); z-index: 50; max-width: 528px; margin: 0 auto; background: var(--card); color: var(--text); border-radius: 16px; padding: 12px 14px; box-shadow: 0 8px 28px rgba(0,0,0,.18); border: none; text-align: left; cursor: pointer; display: flex; gap: 10px; align-items: flex-start; width: auto; }
+  .toast > svg { width: 22px; height: 22px; flex: none; color: var(--accent); margin-top: 1px; }
+  .toast b { display: block; font-size: 15px; } .toast span.sub { display: block; font-size: 13px; color: var(--muted); }
+  .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: 1px; animation: livepulse 2s ease-in-out infinite; }
+  @keyframes livepulse { 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+  .spark { height: 56px; margin-top: 8px; } .spark svg { display: block; width: 100%; height: 100%; }
   .note { border-radius: 14px; padding: 12px 14px; font-size: 14px; margin: 0 0 12px; }
   .note.ok { background: var(--ok-bg); color: var(--ok); }
   .note.warn { background: var(--warn-bg); color: var(--warn); }
@@ -225,7 +246,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4</footer>
+  <footer>Мини-приложение DataGraph · v4.4</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -268,6 +289,7 @@
     rating: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
     myshift: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    bell: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
     profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.3-6 8-6s7 2 8 6"/>',
     work: '<path d="M7 4v16l13-8z"/>', high: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>', idle: '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',
     down: '<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>', off: '<path d="M2 2l20 20M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 5.2-2.8M19 13a10 10 0 0 0-2.4-1.7M2 8.8a15 15 0 0 1 4.2-2.7M22 8.8A15 15 0 0 0 10.7 5"/><circle cx="12" cy="20" r="1"/>'
@@ -345,7 +367,7 @@
   var tab = null, sub = null;           // sub: { type: 'machine', id }
   var cache = {};                       // data | machine:<id> | shifts:<day> | rating:<entity>:<month>
   var loadedAt = {}, busy = {}, timer = null;
-  var ui = { eqFilter: 'all', eqQuery: '', shiftsDay: 'today', ratingEntity: 'users', ratingMonth: null, logoutConfirm: false };
+  var ui = { notifOpen: {}, eqFilter: 'all', eqQuery: '', shiftsDay: 'today', shiftType: 'all', ratingEntity: 'users', ratingMonth: null, logoutConfirm: false };
 
   var views = ['vLoading', 'vError', 'vLogin', 'vApp'];
   function show(id) { views.forEach(function (v) { $(v).hidden = v !== id; }); $('tabs').hidden = id !== 'vApp'; }
@@ -375,8 +397,11 @@
     $('appError').hidden = true;
     render(); ensure(); window.scrollTo(0, 0);
   }
-  function openMachine(id) { sub = { type: 'machine', id: id }; backButton(true); $('appError').hidden = true; render(); ensure(); window.scrollTo(0, 0); }
-  function closeSub() { sub = null; backButton(false); render(); ensure(); window.scrollTo(0, 0); }
+  // вложенные экраны: карточка станка, уведомления (станок из уведомлений — «Назад» вернёт к ним)
+  function openSub(next) { next.from = sub; sub = next; backButton(true); $('appError').hidden = true; render(); ensure(); window.scrollTo(0, 0); }
+  function openMachine(id) { openSub({ type: 'machine', id: id }); }
+  function openNotifs() { openSub({ type: 'notifs' }); }
+  function closeSub() { sub = sub ? sub.from || null : null; backButton(!!sub); render(); ensure(); window.scrollTo(0, 0); }
   // системная кнопка «Назад» MAX — для экрана станка
   var backBound = false;
   function backButton(on) {
@@ -390,6 +415,7 @@
   // какие данные нужны текущему экрану
   function needKey() {
     if (sub && sub.type === 'machine') return 'machine:' + sub.id;
+    if (sub && sub.type === 'notifs') return 'notifications';
     if (tab === 'shifts') return 'shifts:' + ui.shiftsDay;
     if (tab === 'rating') return 'rating:' + ui.ratingEntity + ':' + (ui.ratingMonth || '');
     if (tab === 'profile') return null;
@@ -399,6 +425,7 @@
     if (key === 'data') return call('data');
     var p = key.split(':');
     if (p[0] === 'machine') return call('machine', { eq: p[1] });
+    if (p[0] === 'notifications') return call('notifications');
     if (p[0] === 'shifts') return call('shifts', { day: p[1] });
     if (p[0] === 'rating') return call('rating', p[2] ? { entity: p[1], month: p[2] } : { entity: p[1] });
   }
@@ -410,6 +437,7 @@
     request(key).then(function (resp) {
       if (resp.ok) {
         cache[key] = resp; loadedAt[key] = Date.now(); tz = resp.tz || tz;
+        if (key === 'data' || key.indexOf('machine:') === 0) liveApply(null);
         $('appError').hidden = true;
         return;
       }
@@ -433,17 +461,36 @@
       if (key && key.indexOf('rating:') !== 0) ensure(true);
     }, REFRESH_MS);
   }
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && profile && profile.state === 'authorized') ensure(); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') { liveStop(); return; }
+    if (profile && profile.state === 'authorized') { ensure(); liveStart(); }
+  });
 
   // ---------- части экранов ----------
-  function header(title, subText, refreshKey) {
-    var right = refreshKey ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Обновить', onclick: function () { ensure(true); } }, icon('refresh')) : null;
-    if (right && busy[refreshKey]) right.firstChild.classList.add('spin');
-    return h('div', { class: 'head' }, h('div', null, h('h1', { text: title }), subText ? h('div', { class: 'muted small', text: subText }) : null), right);
+  function header(title, subText, refreshKey, bell) {
+    var refresh = refreshKey ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Обновить', onclick: function () { ensure(true); } }, icon('refresh')) : null;
+    if (refresh && busy[refreshKey]) refresh.firstChild.classList.add('spin');
+    var n = cache.data && cache.data.notif_unread;
+    var bellBtn = bell ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Уведомления' + (n ? ', непрочитанных: ' + n : ''), onclick: openNotifs }, icon('bell'), n ? h('span', { class: 'badge', text: n > 99 ? '99+' : String(n) }) : null) : null;
+    return h('div', { class: 'head' }, h('div', null, h('h1', { text: title }), subText ? (typeof subText === 'string' ? h('div', { class: 'muted small', text: subText }) : h('div', { class: 'muted small' }, subText)) : null), h('div', { class: 'head-actions' }, bellBtn, refresh));
+  }
+  function ago(iso) {
+    if (!iso) return '';
+    var t = new Date(iso).getTime(), m = Math.round((Date.now() - t) / 60000);
+    if (m < 1) return 'только что';
+    if (m < 60) return m + ' мин назад';
+    var today = dayKey(new Date().toISOString()), yest = dayKey(new Date(Date.now() - 86400000).toISOString()), k = dayKey(iso);
+    if (k === today) return 'сегодня в ' + hm(iso);
+    if (k === yest) return 'вчера в ' + hm(iso);
+    var dd = Math.round(m / 1440);
+    return dd < 7 ? dd + ' ' + plural(dd, 'день', 'дня', 'дней') + ' назад' : fmt(iso, { day: 'numeric', month: 'long' });
   }
   function loading() { return h('div', { class: 'card' }, h('div', { class: 'spinner', 'aria-hidden': 'true' }), h('p', { class: 'muted', style: 'text-align:center;margin:0', text: 'Загружаю данные DataGraph…' })); }
   function emptyCard(text) { return h('div', { class: 'card' }, h('div', { class: 'empty', text: text })); }
-  function updated(d) { return d && d.generated_at ? 'Обновлено в ' + hm(d.generated_at) + (d.partial ? ' · часть данных не загрузилась' : '') : ''; }
+  function updated(d) {
+    if (live.connected) return h('span', null, h('span', { class: 'live-dot', 'aria-hidden': 'true' }), 'В реальном времени' + (d && d.partial ? ' · часть данных не загрузилась' : ''));
+    return d && d.generated_at ? 'Обновлено в ' + hm(d.generated_at) + (d.partial ? ' · часть данных не загрузилась' : '') : '';
+  }
   function eqRow(x, subText) {
     var k = x.kind || 'off';
     return h('button', { type: 'button', class: 'row k-' + k, onclick: function () { openMachine(x.id); } },
@@ -462,7 +509,7 @@
   // ===== администратор: «Сейчас» =====
   function screenNow(d) {
     var s = d.summary || {}, out = [];
-    out.push(header('Сейчас', updated(d), 'data'));
+    out.push(header('Сейчас', updated(d), 'data', true));
     var tot = s.total || 0;
     var bar = h('div', { class: 'bar', 'aria-hidden': 'true' });
     [['work', (s.work || 0) + (s.high || 0), '#7FE09A'], ['idle', s.idle, '#FFD27A'], ['down', s.down, '#D9D9DE'], ['off', s.off, '#FF9A9D']].forEach(function (p) {
@@ -555,6 +602,8 @@
       h('div', { style: 'flex:1' }, h('span', { class: 'pill', text: KIND[k] }),
         h('div', { style: 'font-size:22px;font-weight:700;margin-top:4px', text: m.minutes != null ? dur(m.minutes) : '—' }),
         h('div', { class: 'muted small', text: [sinceText(m.since), (k === 'idle' || k === 'off' || k === 'down') && m.threshold ? 'порог уведомления ' + minLabel(m.threshold) : ''].filter(Boolean).join(' · ') }))));
+    var cur = liveCurrentCard(m.id);
+    if (cur) out.push(cur);
     var shiftBox = h('div', { class: 'kv' });
     if (m.shift) add(shiftBox, [h('span', { class: 'muted', text: 'Оператор' }), h('span', { text: m.shift.user || '—' }), h('span', { class: 'muted', text: 'Смена' }), h('span', { text: m.shift.title || (m.shift.start && m.shift.finish ? hm(m.shift.start) + '–' + hm(m.shift.finish) : '—') })]);
     out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Смена' }), m.shift ? shiftBox : h('div', { class: 'muted small', text: 'Сейчас станок ни за кем не закреплён.' })));
@@ -584,7 +633,8 @@
     var wt = d.week_total || {};
     out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Эта неделя' }), wk, ax,
       h('div', { class: 'legend' }, legendRow('work', 'В работе', hours(wt.work)), legendRow('idle', 'Простой', hours(wt.nowork)), legendRow('down', 'Выключен', hours(wt.off)))));
-    out.push(h('p', { class: 'muted small', style: 'text-align:center', text: updated(d) }));
+    var upd = updated(d);
+    out.push(typeof upd === 'string' ? h('p', { class: 'muted small', style: 'text-align:center', text: upd }) : h('p', { class: 'muted small', style: 'text-align:center' }, upd));
     return out;
   }
 
@@ -593,23 +643,49 @@
     var out = [header('Смены', d ? updated(d) : '', 'shifts:' + ui.shiftsDay)];
     var seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'День' });
     [['today', 'Сегодня'], ['tomorrow', 'Завтра']].forEach(function (p) {
-      seg.appendChild(h('button', { type: 'button', 'aria-pressed': ui.shiftsDay === p[0] ? 'true' : 'false', text: p[1], onclick: function () { ui.shiftsDay = p[0]; render(); ensure(); } }));
+      seg.appendChild(h('button', { type: 'button', 'aria-pressed': ui.shiftsDay === p[0] ? 'true' : 'false', text: p[1], onclick: function () { ui.shiftsDay = p[0]; ui.shiftType = 'all'; render(); ensure(); } }));
     });
     out.push(seg);
     if (!d) { out.push(loading()); return out; }
-    var list = d.shifts || [];
-    if (!list.length) { out.push(emptyCard(ui.shiftsDay === 'today' ? 'На сегодня смен нет.' : 'На завтра смен нет.')); return out; }
-    var groups = [['running', 'Идут сейчас'], ['planned', ui.shiftsDay === 'today' ? 'Впереди' : 'Запланированы'], ['finished', 'Закончились']];
+    var all = d.shifts || [];
+    if (!all.length) { out.push(emptyCard(ui.shiftsDay === 'today' ? 'На сегодня смен нет.' : 'На завтра смен нет.')); return out; }
+    // фильтр по типу смены (дневная, ночная…)
+    var typeOf = function (s) { return s.type_name || s.title || 'Без типа'; };
+    var types = [];
+    all.forEach(function (s) { if (types.indexOf(typeOf(s)) === -1) types.push(typeOf(s)); });
+    if (types.indexOf(ui.shiftType) === -1) ui.shiftType = 'all';
+    if (types.length > 1) {
+      var chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Тип смены' });
+      [['all', 'Все']].concat(types.map(function (t) { return [t, t]; })).forEach(function (c) {
+        var n = c[0] === 'all' ? all.length : all.filter(function (s) { return typeOf(s) === c[0]; }).length;
+        chips.appendChild(h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.shiftType === c[0] ? 'true' : 'false', text: c[1] + ' ' + n, onclick: function () { ui.shiftType = c[0]; render(); } }));
+      });
+      out.push(chips);
+    }
+    var list = all.filter(function (s) { return ui.shiftType === 'all' || typeOf(s) === ui.shiftType; });
+    // группы — по типу и началу смены: «Ночная смена 20:00–08:00»; вчерашняя и сегодняшняя ночные — разные группы
+    var groups = [];
+    list.forEach(function (s) {
+      var key = (s.title || '') + '|' + (s.start || '');
+      var g = groups.filter(function (x) { return x.key === key; })[0];
+      if (!g) { g = { key: key, title: s.title || (s.start && s.finish ? 'Смена ' + hm(s.start) + '–' + hm(s.finish) : 'Смена'), status: s.status, start: s.start, finish: s.finish, items: [] }; groups.push(g); }
+      g.items.push(s);
+    });
+    var order = { running: 0, planned: 1, finished: 2 };
+    groups.sort(function (a, b) { return (order[a.status] - order[b.status]) || String(a.start).localeCompare(String(b.start)); });
+    var nowMs = Date.now();
     groups.forEach(function (g) {
-      var items = list.filter(function (s) { return s.status === g[0]; });
-      if (!items.length) return;
-      var without = items.filter(function (s) { return !s.equipment.length; }).length;
-      out.push(h('div', { class: 'group', text: g[1] + ' · ' + items.length + (without ? ', без станков: ' + without : '') }));
-      items.forEach(function (s) {
+      var without = g.items.filter(function (s) { return !s.equipment.length; }).length;
+      var st = g.status === 'running' ? 'идёт' + (g.finish ? ' · ещё ' + dur((new Date(g.finish).getTime() - nowMs) / 60000) : '')
+             : g.status === 'planned' ? (g.start ? (dayKey(g.start) === dayKey(new Date().toISOString()) ? 'начнётся в ' + hm(g.start) : 'начнётся ' + fmt(g.start, { day: 'numeric', month: 'long' }) + ' в ' + hm(g.start)) : 'впереди')
+             : (g.finish ? 'закончилась в ' + hm(g.finish) : 'закончилась');
+      out.push(h('div', { style: 'font-weight:700;font-size:16px;margin:8px 4px 2px', text: g.title }));
+      out.push(h('div', { class: 'muted small', style: 'margin:0 4px 8px', text: st + ' · ' + g.items.length + ' ' + plural(g.items.length, 'человек', 'человека', 'человек') + (without ? ' · без станков: ' + without : '') }));
+      g.items.slice().sort(function (a, b) { return ((a.equipment.length ? 1 : 0) - (b.equipment.length ? 1 : 0)) || String(a.full_name || a.user).localeCompare(String(b.full_name || b.user), 'ru'); }).forEach(function (s) {
         var c = h('div', { class: 'card' + (!s.equipment.length && s.status !== 'finished' ? ' warn-border' : '') });
         c.appendChild(h('div', { class: 'sh-head' }, h('div', { class: 'av', text: initials(s.full_name || s.user) }),
           h('div', { style: 'flex:1;min-width:0' }, h('div', { style: 'font-weight:600', text: s.full_name || s.user }),
-            h('div', { class: 'muted small', text: [s.workshop, s.title || (s.start && s.finish ? hm(s.start) + '–' + hm(s.finish) : '')].filter(Boolean).join(' · ') })),
+            s.workshop || s.unit ? h('div', { class: 'muted small', text: s.workshop || s.unit }) : null),
           !s.equipment.length ? h('span', { class: 'pill k-idle', text: 'без станков' }) : null));
         s.equipment.forEach(function (x) {
           var k = x.kind;
@@ -650,6 +726,56 @@
         h('div', { class: 'side' }, h('div', { style: 'font-weight:700;font-size:15px', text: hours(x.hours) }), h('div', { class: 'small ' + (x.move > 0 ? 'move-up' : x.move < 0 ? 'move-down' : 'muted'), style: 'font-weight:600', text: mv }))));
     });
     out.push(c);
+    return out;
+  }
+
+  // ===== уведомления: один список — колокольчик DataGraph + то, чего на сайте нет (бот) =====
+  function markRead(nid) {
+    var d = cache.notifications, dec = 0;
+    if (d) (d.groups || []).forEach(function (g) {
+      g.items.forEach(function (x) { if ((!nid || x.id === nid) && x.unread) { x.unread = false; g.unread = Math.max(0, g.unread - 1); dec++; } });
+      if (!nid) g.unread = 0;
+    });
+    if (d) d.unread = nid ? Math.max(0, (d.unread || 0) - dec) : 0;
+    if (cache.data && cache.data.notif_unread) cache.data.notif_unread = nid ? Math.max(0, cache.data.notif_unread - (dec || 1)) : 0;
+    render();
+    call('notif_read', nid ? { nid: nid } : {}).then(function (resp) {
+      if (!resp.ok) throw new Error(resp.message);
+      if (resp.site_failed) appError('Уведомления DataGraph отметить не удалось — попробуйте позже.');
+    }).catch(function (e) { appError(e && e.message ? e.message : 'Не удалось отметить прочитанным.'); loadedAt.notifications = 0; })
+      .finally(function () { loadedAt.data = 0; render(); });
+  }
+  function screenNotifs(d) {
+    var out = [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад')];
+    var unread = d ? (d.unread || 0) : 0;
+    out.push(h('div', { class: 'head', style: 'margin-top:6px' }, h('h1', { text: 'Уведомления' }),
+      unread ? h('button', { type: 'button', class: 'linkbtn', text: 'Прочитать все', onclick: function () { markRead(null); } }) : null));
+    if (!d) { out.push(loading()); return out; }
+    var groups = d.groups || [];
+    if (d.site_error) out.push(h('div', { class: 'note err', text: d.site_error }));
+    if (!groups.length) { out.push(emptyCard('Уведомлений нет.')); return out; }
+    groups.forEach(function (g) {
+      var open = !!ui.notifOpen[g.key];
+      var c = h('div', { class: 'card list' });
+      var cnt = g.active ? 'идёт: ' + g.active : g.unread ? g.unread + ' новых' : String(g.count);
+      c.appendChild(h('div', { class: 'grp-head', style: 'padding-top:12px' }, g.kind ? h('span', { class: 'dot k-' + g.kind }) : null,
+        h('span', { class: 'lbl', text: g.label }), h('span', { class: 'cnt' + (g.active || g.unread ? ' hot' : ''), text: cnt })));
+      (open ? g.items : g.items.slice(0, 3)).forEach(function (x) {
+        var title = x.title, text = x.text;
+        if (title === g.label && text) { title = text; text = null; }   // «Высокая нагрузка» в группе «Высокая нагрузка» → имя станка
+        var go = function () {
+          if (x.unread && x.id) markRead(x.id);
+          if (x.source === 'bot' && x.equipment_id) openMachine(x.equipment_id);
+        };
+        c.appendChild(h('button', { type: 'button', class: 'ntf', onclick: go },
+          h('span', { class: 'u' + (x.unread ? '' : ' read') }),
+          h('span', { style: 'flex:1;min-width:0' }, h('b', { text: title }), text ? h('span', { class: 'sub', text: text }) : null,
+            h('span', { class: 'sub', text: ago(x.at) + (x.source === 'bot' ? ' · от бота' : '') })),
+          x.active ? h('span', { class: 'pill k-' + (g.kind || 'idle'), style: 'align-self:center', text: 'идёт' }) : null));
+      });
+      if (g.items.length > 3) c.appendChild(h('button', { type: 'button', class: 'linkbtn', style: 'padding:10px 0 12px', text: open ? 'Свернуть' : 'Показать ещё ' + (g.items.length - 3) + (g.count > g.items.length ? ' (всего ' + g.count + ')' : ''), onclick: function () { ui.notifOpen[g.key] = !open; render(); } }));
+      out.push(c);
+    });
     return out;
   }
 
@@ -714,7 +840,7 @@
 
   // ===== сотрудник: «Смена» =====
   function screenMyShift(d) {
-    var out = [header('Моя смена', updated(d), 'data')];
+    var out = [header('Моя смена', updated(d), 'data', true)];
     var s = d.my_shift;
     if (!s) { out.push(h('div', { class: 'card' }, h('h2', { text: 'Активной смены нет' }), h('p', { class: 'muted', style: 'margin:4px 0 0', text: 'Смена назначается на сайте DataGraph.' }))); return out; }
     var start = s.start ? new Date(s.start).getTime() : null, finish = s.finish ? new Date(s.finish).getTime() : null, now = Date.now();
@@ -732,6 +858,181 @@
     return out;
   }
 
+  // ===== живое обновление: веб-сокеты DataGraph, как на сайте (v4.4) =====
+  // WF9 выдаёт короткий токен (ws_token), страница слушает три канала:
+  //   current_state   — {id: {state}} всех станков, при изменении (раз в несколько секунд);
+  //   current_metrics — {id: {metric, count[]}} ток с датчиков, раз в 1–2 с;
+  //   notifications   — новое уведомление сайта (первое сообщение — список, его пропускаем).
+  // Если соединиться не вышло — работает как раньше, опросом раз в минуту.
+  var STATE_KIND = { '1': 'work', '10': 'high', '-10': 'idle', '0': 'down', '-1': 'off' };
+  var CHANNELS = ['current_state', 'current_metrics', 'notifications'];
+  var live = { on: false, connected: false, failed: false, url: null, token: null, tokenAt: 0, socks: {}, state: null, metrics: {}, hist: {}, lastMsg: 0, retry: 0, timer: null, wd: null, seen: {}, notifFirst: true, refreshT: null, lastRefresh: 0, pending: false };
+  function liveStart() {
+    if (live.on || live.failed || !profile || profile.state !== 'authorized' || document.visibilityState === 'hidden' || !('WebSocket' in window)) return;
+    live.on = true; live.notifFirst = true; liveConnect();
+    live.wd = setInterval(function () {                          // тишина больше минуты — переподключаемся
+      if (live.connected && Date.now() - live.lastMsg > 60000) { closeSocks(); liveSet(false); liveRetry(); }
+    }, 15000);
+  }
+  function closeSocks() { Object.keys(live.socks).forEach(function (k) { var s = live.socks[k]; s.onclose = null; try { s.close(); } catch (e) {} }); live.socks = {}; }
+  function liveStop() {
+    live.on = false; clearTimeout(live.timer); live.timer = null; clearInterval(live.wd); live.wd = null;
+    closeSocks(); liveSet(false);
+  }
+  function liveConnect() {
+    if (!live.on) return;
+    var fresh = live.token && Date.now() - live.tokenAt < 4 * 60000;
+    (fresh ? Promise.resolve(null) : call('ws_token')).then(function (resp) {
+      if (resp) {
+        if (!resp.ok) { if (resp.error === 'not_authorized' || resp.error === 'session_expired') { liveStop(); return; } throw new Error(resp.message || 'no token'); }
+        live.url = resp.ws_url; live.token = resp.ws_token; live.tokenAt = Date.now();
+      }
+      if (live.on) CHANNELS.forEach(openSock);
+    }).catch(function () { liveRetry(); });
+  }
+  function openSock(ch) {
+    var old = live.socks[ch];
+    if (old && (old.readyState === 0 || old.readyState === 1)) return;
+    var s;
+    try { s = new WebSocket(live.url + '/' + ch + '?token=' + encodeURIComponent(live.token)); } catch (e) { liveRetry(); return; }
+    live.socks[ch] = s;
+    s.onmessage = function (ev) {
+      var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+      live.lastMsg = Date.now(); live.retry = 0;
+      if (!live.connected) liveSet(true);
+      onLive(ch, d);
+    };
+    s.onclose = function (ev) {
+      if (live.socks[ch] === s) delete live.socks[ch];
+      if (!live.on) return;
+      if (ev.code === 1008) live.token = null;                     // токен истёк — попросим новый
+      if (live.connected && !Object.keys(live.socks).length) liveSet(false);
+      liveRetry();
+    };
+  }
+  function liveRetry() {
+    if (!live.on || live.timer) return;
+    if (live.retry >= 8 && !live.connected) { live.failed = true; liveStop(); return; }   // не пускают — остаёмся на опросе
+    var ms = Math.min(60000, 2000 * Math.pow(2, live.retry++));
+    live.timer = setTimeout(function () { live.timer = null; liveConnect(); }, ms);
+  }
+  function liveSet(on) { if (live.connected === on) return; live.connected = on; softRender(); }
+  // не перерисовываем, пока человек печатает в поиске или открыт список
+  function softRender() {
+    var ae = document.activeElement;
+    if (ae && (ae.classList.contains('search') || ae.tagName === 'SELECT')) {
+      if (!live.pending) { live.pending = true; ae.addEventListener('blur', function () { live.pending = false; render(); }, { once: true }); }
+      return;
+    }
+    render();
+  }
+  function onLive(ch, d) {
+    if (ch === 'current_state') {
+      if (!d || typeof d !== 'object' || Array.isArray(d)) return;
+      var prev = live.state, changed = {};
+      if (prev) Object.keys(d).concat(Object.keys(prev)).forEach(function (id) { if (String((prev[id] || {}).state) !== String((d[id] || {}).state)) changed[id] = true; });
+      live.state = d;
+      if (liveApply(changed)) softRender();
+      if (Object.keys(changed).length) scheduleRefresh();
+    } else if (ch === 'current_metrics') {
+      if (!d || typeof d !== 'object' || Array.isArray(d)) return;
+      var t = Date.now();
+      Object.keys(d).forEach(function (id) {
+        var v = Number(d[id] && d[id].metric);
+        if (!isFinite(v)) return;
+        live.metrics[id] = v;
+        var hs = live.hist[id] || (live.hist[id] = []);
+        hs.push([t, v]); while (hs.length && t - hs[0][0] > 180000) hs.shift();   // 3 минуты
+      });
+      if (sub && sub.type === 'machine') drawCurrent(sub.id);
+    } else if (ch === 'notifications') {
+      var first = live.notifFirst; live.notifFirst = false;
+      var arr = Array.isArray(d) ? d : [d];
+      if (first && Array.isArray(d)) { arr.forEach(function (n) { if (n && n.id) live.seen[n.id] = true; }); return; }
+      var fresh = arr.filter(function (n) { return n && n.id && !live.seen[n.id] && n.is_read !== true; });
+      if (!fresh.length) return;
+      fresh.forEach(function (n) { live.seen[n.id] = true; });
+      if (cache.data) cache.data.notif_unread = (cache.data.notif_unread || 0) + fresh.length;
+      loadedAt.notifications = 0;
+      toast(fresh[fresh.length - 1], fresh.length);
+      if (sub && sub.type === 'notifs') ensure(true); else softRender();
+    }
+  }
+  // живые состояния → данные экранов. changed: станки, у которых состояние сменилось только что
+  function liveApply(changed) {
+    var st = live.state; if (!st) return false;
+    changed = changed || {};
+    var nowIso = new Date().toISOString(), any = false;
+    function upd(x) {
+      if (!x || !x.id) return;
+      var k = st[x.id] ? (STATE_KIND[String(st[x.id].state)] || 'off') : 'off';
+      if (x.kind === k) return;
+      x.kind = k; any = true;
+      if (changed[x.id]) { x.since = nowIso; x.minutes = 0; x.shift_minutes = 0; } else { x.since = null; x.minutes = null; }
+      x.live_changed = true;
+    }
+    var d = cache.data;
+    if (d) {
+      (d.equipment || []).forEach(upd);
+      (d.attention || []).forEach(upd);
+      if (d.attention) d.attention = d.attention.filter(function (x) { return !x.live_changed; });   // сменил состояние — уже не «долго стоит»
+      if (d.my_shift) (d.my_shift.equipment || []).forEach(upd);
+      if (d.summary && d.equipment) {
+        var c = { work: 0, high: 0, idle: 0, down: 0, off: 0 };
+        d.equipment.forEach(function (x) { c[x.kind in c ? x.kind : 'off']++; });
+        var s = d.summary; s.work = c.work; s.high = c.high; s.idle = c.idle; s.down = c.down; s.off = c.off;
+        s.working = c.work + c.high;
+        var tot = Math.max(s.load_total || 0, d.equipment.length);
+        if (tot) { s.load_total = tot; s.load_pct = Math.round(s.working / tot * 100); }
+      }
+    }
+    Object.keys(cache).forEach(function (key) { if (key.indexOf('machine:') === 0 && cache[key].machine) upd(cache[key].machine); });
+    return any;
+  }
+  // после смены состояния — через несколько секунд тихо подтянуть точные длительности и «Обратите внимание»
+  function scheduleRefresh() {
+    if (live.refreshT) return;
+    var wait = Math.max(4000, 20000 - (Date.now() - live.lastRefresh));
+    live.refreshT = setTimeout(function () {
+      live.refreshT = null; live.lastRefresh = Date.now();
+      var key = needKey();
+      if (key === 'data' || (key && key.indexOf('machine:') === 0)) ensure(true);
+    }, wait);
+  }
+  function amps(v) { return (Math.round(v * 10) / 10).toFixed(1).replace('.', ',') + ' А'; }
+  function liveCurrentCard(id) {
+    if (!live.connected || live.metrics[id] == null) return null;
+    return h('div', { class: 'card' },
+      h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:8px' }, h('p', { class: 'card-title', text: 'Ток сейчас' }), h('span', { class: 'muted small' }, h('span', { class: 'live-dot', 'aria-hidden': 'true' }), 'с датчика')),
+      h('div', { id: 'liveCur', style: 'font-size:26px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums', text: amps(live.metrics[id]) }),
+      h('div', { id: 'liveSpark', class: 'spark', role: 'img', 'aria-label': 'Ток за последние минуты' }),
+      h('div', { class: 'muted small', text: 'последние 3 минуты' }));
+  }
+  function drawCurrent(id) {
+    var cur = $('liveCur'), box = $('liveSpark');
+    if (!cur || !box) { if (live.connected && live.metrics[id] != null && !$('liveCur')) softRender(); return; }
+    cur.textContent = amps(live.metrics[id]);
+    var hs = live.hist[id] || [];
+    if (hs.length < 3) { box.innerHTML = ''; return; }
+    var W = 300, H = 56, t1 = hs[hs.length - 1][0], t0 = hs[0][0];
+    if (t1 <= t0) return;
+    var max = Math.max.apply(null, hs.map(function (p) { return p[1]; })) * 1.1 || 1;
+    var pts = hs.map(function (p) { return ((p[0] - t0) / (t1 - t0) * W).toFixed(1) + ',' + (H - 2 - p[1] / max * (H - 4)).toFixed(1); });
+    box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+      '<polygon points="0,' + H + ' ' + pts.join(' ') + ' ' + pts[pts.length - 1].split(',')[0] + ',' + H + '" fill="var(--accent-soft)"/>' +
+      '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>';
+  }
+  var toastT = null;
+  function toast(n, count) {
+    var old = $('toast'); if (old) old.remove();
+    var text = [n.subject && n.subject.value, n.object && n.object.value].filter(Boolean).join(' · ');
+    var el = h('button', { type: 'button', id: 'toast', class: 'toast', role: 'status', onclick: function () { el.remove(); openNotifs(); } },
+      icon('bell'), h('span', { style: 'flex:1;min-width:0' }, h('b', { text: n.title || 'Новое уведомление' }), text ? h('span', { class: 'sub', text: text }) : null,
+        count > 1 ? h('span', { class: 'sub', text: 'и ещё ' + (count - 1) }) : null));
+    document.body.appendChild(el);
+    clearTimeout(toastT); toastT = setTimeout(function () { if (el.parentNode) el.remove(); }, 6000);
+  }
+
   // ---------- отрисовка ----------
   function render() {
     if (!profile || profile.state !== 'authorized') return;
@@ -739,6 +1040,7 @@
     var key = needKey(), d = key ? cache[key] : null;
     var nodes;
     if (sub && sub.type === 'machine') nodes = d ? screenMachine(d) : [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'), loading()];
+    else if (sub && sub.type === 'notifs') nodes = screenNotifs(d);
     else if (tab === 'shifts') nodes = screenShifts(d);
     else if (tab === 'rating') nodes = screenRating(d);
     else if (tab === 'profile') nodes = screenProfile();
@@ -748,6 +1050,7 @@
     else if (tab === 'myshift') nodes = screenMyShift(d);
     else nodes = screenNow(d);
     add(box, nodes);
+    if (sub && sub.type === 'machine') drawCurrent(sub.id);
   }
 
   // ---------- вход / выход ----------
@@ -761,9 +1064,9 @@
       $('loginDone').textContent = resp.notified ? 'Вход выполнен. В чате бота — кнопка «Открыть панель».' : 'Вход выполнен.';
       show('vApp');
       if (!was || opts.justLoggedIn || !tab) { cache = {}; loadedAt = {}; buildTabs(); setTab(tabs()[0][0]); }
-      startTimer();
+      startTimer(); liveStart();
     } else {
-      if (timer) clearInterval(timer); timer = null;
+      if (timer) clearInterval(timer); timer = null; liveStop();
       cache = {}; loadedAt = {}; tab = null; sub = null; backButton(false); ui.logoutConfirm = false;
       $('expiredNote').hidden = profile.state !== 'session_expired';
       if (profile.login_hint && !$('email').value) $('email').value = profile.login_hint;
