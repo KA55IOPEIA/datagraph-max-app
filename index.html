@@ -6,310 +6,322 @@
 <title>DataGraph</title>
 <!-- MAX Bridge: даёт странице window.WebApp — кто открыл (initData с подписью), платформа, кнопка «Назад» -->
 <script src="https://st.max.ru/js/max-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Оформление — как у сайта DataGraph: шрифт Onest, фиолетовый акцент, цвета состояний сайта */
   :root {
-    --bg: #F2F3F5; --card: #FFFFFF; --text: #14161A; --muted: #5F6672; --line: #E3E6EA; --field: #F6F7F9;
-    --accent: #2563EB; --accent-text: #FFFFFF; --accent-soft: #EAF1FE;
-    --ok: #15803D; --ok-bg: #F0FDF4; --warn: #B45309; --warn-bg: #FFFBEB; --err: #B91C1C; --err-bg: #FEF2F2;
-    /* статусы станков */
-    --s-work: #16A34A; --s-work-bg: #E8F7EE;
-    --s-high: #0E7490; --s-high-bg: #E3F4F8;
-    --s-idle: #D97706; --s-idle-bg: #FDF3E1;
-    --s-off: #6B7280; --s-off-bg: #EEF0F2;
+    --bg: #F7F7F7; --card: #FFFFFF; --text: #080D2F; --muted: #686A7A; --line: #EFEFF1; --field: #F0F0F3;
+    --accent: #6F21E1; --accent-2: #5A18BC; --accent-text: #FFFFFF; --accent-soft: #F2EBFD;
+    --ok: #2E8B4A; --ok-bg: #E7F6EC; --warn: #A86A00; --warn-bg: #FFF4DC; --err: #C8282D; --err-bg: #FDECEC;
+    --c-work: #49B866; --c-high: #2F80ED; --c-idle: #FCB127; --c-down: #9E9E9E; --c-off: #EE4E52; --c-nodata: #F3D3D4;
+    --t-work: #2E8B4A; --b-work: #E7F6EC; --t-high: #1F64C8; --b-high: #E6F0FD; --t-idle: #A86A00; --b-idle: #FFF4DC;
+    --t-down: #5F6270; --b-down: #EFEFF1; --t-off: #C8282D; --b-off: #FDECEC;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0F1115; --card: #1A1D23; --text: #F2F3F5; --muted: #A3A9B4; --line: #2E333B; --field: #22262D;
-      --accent: #6EA0FF; --accent-text: #0F1115; --accent-soft: #1C2A44;
+      --bg: #0F1115; --card: #1A1D23; --text: #F2F3F5; --muted: #A3A9B4; --line: #2A2E36; --field: #23272E;
+      --accent: #9A6BF0; --accent-2: #B48CF5; --accent-text: #FFFFFF; --accent-soft: #2A2140;
       --ok: #4ADE80; --ok-bg: #12261A; --warn: #FBBF24; --warn-bg: #2A2110; --err: #F87171; --err-bg: #2A1414;
-      --s-work: #4ADE80; --s-work-bg: #13281B;
-      --s-high: #38BDF8; --s-high-bg: #10283A;
-      --s-idle: #FBBF24; --s-idle-bg: #2C2310;
-      --s-off: #9CA3AF; --s-off-bg: #24272D;
+      --c-nodata: #4A2A2C;
+      --t-work: #6EE7A0; --b-work: #13281B; --t-high: #8DB8F8; --b-high: #12233A; --t-idle: #FBC85A; --b-idle: #2C2310;
+      --t-down: #B7BAC4; --b-down: #24272D; --t-off: #F79A9C; --b-off: #2E1718;
     }
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; background: var(--bg); }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
-    padding: 20px 16px calc(84px + env(safe-area-inset-bottom));
+    font: 16px/1.4 'Onest', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 18px 16px calc(92px + env(safe-area-inset-bottom));
   }
   main { max-width: 560px; margin: 0 auto; }
-  h1 { margin: 0; font-size: 26px; line-height: 32px; letter-spacing: -0.02em; }
-  .top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-  .top .who { color: var(--muted); font-size: 14px; text-align: right; }
-  .card { background: var(--card); border-radius: 20px; padding: 16px; margin-bottom: 12px; }
-  .card h2 { font-size: 18px; margin: 0 0 4px; }
-  .card h3 { font-size: 15px; margin: 0 0 10px; color: var(--muted); font-weight: 600; }
-  .muted { color: var(--muted); font-size: 14px; margin: 0; }
+  h1 { margin: 0; font-size: 26px; line-height: 32px; font-weight: 700; letter-spacing: -0.01em; }
+  h2 { margin: 0; font-size: 18px; font-weight: 600; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+  .muted { color: var(--muted); }
   .small { font-size: 13px; }
-  .note { border-radius: 14px; padding: 12px 14px; font-size: 14px; margin: 0 0 14px; }
+  .card { background: var(--card); border-radius: 20px; padding: 16px; margin-bottom: 12px; }
+  .card.list { padding: 4px 16px; }
+  .card-title { font-weight: 600; font-size: 15px; margin: 0 0 2px; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .icon-btn { width: 44px; height: 44px; border: none; border-radius: 14px; background: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
+  .icon-btn svg { width: 20px; height: 20px; }
+  .spin { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; margin: 8px auto; }
+  .btn { width: 100%; height: 48px; border: none; border-radius: 14px; margin-top: 12px; background: var(--field); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn.primary { background: var(--accent); color: var(--accent-text); }
+  .btn.danger { color: var(--err); }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .note { border-radius: 14px; padding: 12px 14px; font-size: 14px; margin: 0 0 12px; }
   .note.ok { background: var(--ok-bg); color: var(--ok); }
   .note.warn { background: var(--warn-bg); color: var(--warn); }
   .note.err { background: var(--err-bg); color: var(--err); }
+  .back { display: inline-flex; align-items: center; gap: 4px; height: 36px; border: none; background: none; color: var(--accent); font-weight: 600; font-size: 15px; padding: 0; cursor: pointer; }
+  .back svg { width: 18px; height: 18px; }
+
+  /* статусы */
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--c); }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--b); color: var(--t); white-space: nowrap; }
+  .k-work { --c: var(--c-work); --t: var(--t-work); --b: var(--b-work); }
+  .k-high { --c: var(--c-high); --t: var(--t-high); --b: var(--b-high); }
+  .k-idle { --c: var(--c-idle); --t: var(--t-idle); --b: var(--b-idle); }
+  .k-down { --c: var(--c-down); --t: var(--t-down); --b: var(--b-down); }
+  .k-off  { --c: var(--c-off);  --t: var(--t-off);  --b: var(--b-off); }
+
+  /* строки станков */
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border: none; border-bottom: 1px solid var(--line); background: none; width: 100%; text-align: left; cursor: pointer; }
+  .row:last-child { border-bottom: none; }
+  .row .main { flex: 1; min-width: 0; }
+  .row .main b { display: block; font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .main span { display: block; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .side { text-align: right; flex: none; }
+  .row .side .t { display: block; font-size: 13px; font-weight: 600; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 18px 0; }
+
+  /* «Сейчас» */
+  .hero { background: #6F21E1; color: #fff; border-radius: 22px; padding: 18px 18px 16px; margin-bottom: 12px; }
+  .hero .big { font-size: 46px; line-height: 1; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .hero .bar { display: flex; gap: 3px; height: 8px; margin-top: 14px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,.2); }
+  .hero .bar span { display: block; height: 100%; }
+  .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .tile { background: var(--card); border-radius: 16px; padding: 12px 14px; border: none; text-align: left; cursor: pointer; }
+  .tile b { display: block; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tile span { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .stack { display: flex; gap: 2px; height: 10px; border-radius: 6px; overflow: hidden; background: var(--field); }
+  .stack span { display: block; height: 100%; background: var(--c); }
+  .legend { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; font-size: 14px; margin-top: 12px; }
+  .legend .l { display: flex; align-items: center; gap: 8px; }
+  .legend .v { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .link-card { display: flex; align-items: center; gap: 12px; width: 100%; border: none; text-align: left; cursor: pointer; }
+  .link-card svg { width: 20px; height: 20px; color: var(--muted); flex: none; }
+
+  /* фильтры, поиск, сегменты */
+  .chips { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px 10px; padding: 0 16px 2px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; height: 36px; padding: 0 14px; border-radius: 999px; border: none; background: var(--card); font-size: 14px; font-weight: 500; cursor: pointer; }
+  .chip[aria-pressed=true] { background: var(--accent); color: var(--accent-text); }
+  .search { width: 100%; height: 46px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); font-size: 15px; padding: 0 14px; margin-bottom: 12px; }
+  .seg { display: flex; background: var(--field); border-radius: 12px; padding: 3px; margin-bottom: 12px; }
+  .seg button { flex: 1; height: 38px; border: none; border-radius: 10px; background: transparent; color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .seg button[aria-pressed=true] { background: var(--card); color: var(--text); }
+  .group { font-size: 13px; font-weight: 600; color: var(--muted); margin: 4px 4px 6px; }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* карточка станка */
+  .status-big { display: flex; align-items: center; gap: 14px; }
+  .status-big .ico { width: 52px; height: 52px; border-radius: 16px; background: var(--b); color: var(--t); display: flex; align-items: center; justify-content: center; flex: none; }
+  .status-big .ico svg { width: 26px; height: 26px; }
+  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 16px; font-size: 14px; }
+  .kv > * { padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .kv > :nth-child(even) { text-align: right; }
+  .kv > :nth-last-child(-n+2) { border-bottom: none; }
+  .bars { display: flex; align-items: flex-end; gap: 2px; height: 70px; margin-top: 10px; }
+  .bars .col { flex: 1; height: 100%; display: flex; flex-direction: column-reverse; border-radius: 3px; overflow: hidden; background: var(--field); }
+  .bars .col.nodata { background: var(--c-nodata); }
+  .bars .col span { display: block; background: var(--c); }
+  .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .week { display: flex; gap: 8px; align-items: flex-end; height: 96px; margin-top: 10px; }
+  .week .col { flex: 1; height: 100%; display: flex; flex-direction: column-reverse; border-radius: 5px; overflow: hidden; background: var(--field); }
+  .week .col span { display: block; background: var(--c); }
+  .week-axis { display: flex; gap: 8px; font-size: 11px; color: var(--muted); margin-top: 4px; text-align: center; }
+  .week-axis span { flex: 1; }
+  .week-axis .on { color: var(--accent); font-weight: 700; }
+
+  /* смены */
+  .sh-head { display: flex; align-items: center; gap: 10px; }
+  .av { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex: none; background: var(--accent-soft); color: var(--accent); }
+  .sh-eq { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 6px 0; border: none; background: none; width: 100%; text-align: left; cursor: pointer; }
+  .sh-eq .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card.warn-border { box-shadow: inset 0 0 0 1px var(--c-idle); }
+  .progress { height: 6px; background: rgba(255,255,255,.25); border-radius: 4px; overflow: hidden; margin-top: 12px; }
+  .progress span { display: block; height: 100%; background: #fff; }
+
+  /* рейтинг */
+  .pos { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex: none; background: var(--field); color: var(--muted); }
+  .pos.top { background: var(--accent); color: #fff; }
+  .move-up { color: var(--ok); } .move-down { color: var(--err); }
+  .select { height: 36px; border-radius: 999px; border: none; background: var(--card); padding: 0 12px; font-size: 14px; font-weight: 600; }
+
+  /* настройки */
+  .sw { width: 50px; height: 30px; border-radius: 999px; border: none; position: relative; cursor: pointer; flex: none; background: var(--field); }
+  .sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: left .15s; }
+  .sw[aria-checked=true] { background: var(--accent); }
+  .sw[aria-checked=true]::after { left: 23px; }
+  .opt-label { font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
+  .opts { display: flex; gap: 6px; }
+  .opts button { flex: 1; height: 36px; border: none; border-radius: 10px; background: var(--field); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 2px; }
+  .opts button[aria-pressed=true] { background: var(--accent); color: var(--accent-text); }
+
+  /* вход */
   label.field { display: block; font-size: 14px; color: var(--muted); margin: 14px 0 6px; }
+  .inp { width: 100%; height: 48px; border-radius: 14px; border: 1px solid var(--line); background: var(--field); padding: 0 14px; font-size: 16px; }
   .input-wrap { position: relative; }
-  input[type=email], input[type=password], input[type=text], input[type=search] {
-    width: 100%; height: 48px; border-radius: 14px; border: 1px solid var(--line); background: var(--field);
-    color: var(--text); font: inherit; padding: 0 14px;
-  }
-  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .input-wrap input { padding-right: 96px; }
-  .eye { position: absolute; right: 6px; top: 6px; height: 36px; width: auto; margin: 0; padding: 0 12px;
-         background: transparent; color: var(--accent); font-size: 14px; font-weight: 600; }
+  .input-wrap .inp { padding-right: 96px; }
+  .eye { position: absolute; right: 6px; top: 6px; height: 36px; padding: 0 12px; border: none; background: transparent; color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer; }
   .check { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 4px; cursor: pointer; }
   .check input { width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--accent); flex: none; }
   .check b { display: block; font-weight: 600; }
   .check span { color: var(--muted); font-size: 13px; }
-  button {
-    width: 100%; height: 48px; border: none; border-radius: 14px; margin-top: 14px;
-    background: var(--field); color: var(--text); font: inherit; font-weight: 600; cursor: pointer;
-  }
-  button.primary { background: var(--accent); color: var(--accent-text); }
-  button.danger { color: var(--err); }
-  button:disabled { opacity: .6; cursor: default; }
-  dl { margin: 14px 0 0; display: grid; grid-template-columns: auto 1fr; }
-  dt, dd { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
-  dt { color: var(--muted); padding-right: 16px; }
-  dd { text-align: right; word-break: break-word; }
-  dl > :nth-last-child(-n+2) { border-bottom: none; }
-  .row2 { display: flex; gap: 8px; }
-  .row2 button { flex: 1; }
-  details { margin-top: 8px; color: var(--muted); font-size: 13px; }
-  details summary { cursor: pointer; padding: 6px 0; }
-  details dl dt, details dl dd { font-size: 13px; padding: 6px 0; }
-  .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent);
-             animation: spin .8s linear infinite; margin: 8px auto; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  [hidden] { display: none !important; }
-  footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 16px; }
+  .brand { background: #6F21E1; color: #fff; border-radius: 22px; padding: 20px 18px; margin-bottom: 12px; }
+  .brand b { display: block; font-size: 22px; letter-spacing: 0.02em; }
 
-  /* ---------- обзор ---------- */
-  .load { display: flex; align-items: baseline; gap: 10px; }
-  .load .big { font-size: 44px; line-height: 1; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-  .meter { height: 10px; border-radius: 6px; background: var(--field); overflow: hidden; display: flex; margin-top: 12px; gap: 2px; }
-  .meter span { display: block; height: 100%; }
-  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .tile { background: var(--card); border-radius: 16px; padding: 12px 14px; text-align: left; height: auto; margin: 0;
-          font-weight: 400; display: block; border: 1px solid transparent; }
-  .tile b { display: block; font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .tile span { font-size: 13px; color: var(--muted); }
-  .tile .dot { margin-right: 6px; }
-  .bar-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 14px; margin-top: 10px; }
-  .bar-row .v { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
-  .updated { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 2px 12px; }
-  .updated button { width: auto; height: 34px; margin: 0; padding: 0 14px; font-size: 14px; }
-
-  /* ---------- списки станков ---------- */
-  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
-  .k-work { --c: var(--s-work); --cb: var(--s-work-bg); }
-  .k-high { --c: var(--s-high); --cb: var(--s-high-bg); }
-  .k-idle { --c: var(--s-idle); --cb: var(--s-idle-bg); }
-  .k-off, .k-unknown { --c: var(--s-off); --cb: var(--s-off-bg); }
-  .dot { background: var(--c); }
-  .eq { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
-  .eq:last-child { border-bottom: none; }
-  .eq .name { flex: 1; min-width: 0; }
-  .eq .name b { display: block; font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .eq .name span { display: block; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pill { flex: none; text-align: right; }
-  .pill i { display: inline-block; font-style: normal; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
-            background: var(--cb); color: var(--c); }
-  .pill span { display: block; font-size: 13px; color: var(--muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
-  .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin: 0 -16px 10px; padding-left: 16px; padding-right: 16px; scrollbar-width: none; }
-  .chips::-webkit-scrollbar { display: none; }
-  .chip { flex: none; width: auto; height: 34px; margin: 0; padding: 0 12px; border-radius: 999px; font-size: 14px;
-          background: var(--card); color: var(--text); font-weight: 500; }
-  .chip[aria-pressed=true] { background: var(--accent); color: var(--accent-text); }
-  .group-title { font-size: 13px; font-weight: 600; color: var(--muted); margin: 6px 0 2px; text-transform: none; }
-  .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 18px 0; }
-  .shift-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-  .badge-warn { font-size: 12px; font-weight: 600; color: var(--warn); background: var(--warn-bg); border-radius: 999px; padding: 3px 8px; flex: none; }
-
-  /* ---------- нижние вкладки ---------- */
-  nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line);
-             display: flex; justify-content: center; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); z-index: 5; }
-  nav.tabs .in { display: flex; gap: 4px; width: 100%; max-width: 560px; }
-  nav.tabs button { flex: 1; height: 52px; margin: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 600;
-                    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 12px; }
+  /* нижние вкладки */
+  nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line); display: flex; justify-content: center; padding: 6px 6px calc(8px + env(safe-area-inset-bottom)); z-index: 5; }
+  nav.tabs .in { display: flex; gap: 2px; width: 100%; max-width: 560px; }
+  nav.tabs button { flex: 1; height: 56px; border: none; background: transparent; color: var(--muted); font-size: 11px; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 12px; cursor: pointer; }
   nav.tabs button svg { width: 22px; height: 22px; }
   nav.tabs button[aria-selected=true] { color: var(--accent); background: var(--accent-soft); }
+  details { margin-top: 8px; color: var(--muted); font-size: 13px; }
+  details summary { cursor: pointer; padding: 6px 0; }
+  details .kv > * { font-size: 13px; padding: 6px 0; }
+  footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 16px; }
 </style>
 </head>
 <body>
 <main>
-  <div class="top">
-    <h1>DataGraph</h1>
-    <div class="who" id="who"></div>
-  </div>
-
-  <!-- загрузка -->
   <section class="card" id="vLoading">
     <div class="spinner" aria-hidden="true"></div>
-    <p class="muted" style="text-align:center" id="loadingText">Проверяю вход…</p>
+    <p class="muted" style="text-align:center;margin:0">Проверяю вход…</p>
   </section>
 
-  <!-- ошибка / открыто не из MAX -->
   <section class="card" id="vError" hidden>
     <h2 id="errTitle">Не получилось</h2>
     <p class="muted" id="errText"></p>
-    <button type="button" id="btnRetry">Повторить</button>
+    <button type="button" class="btn" id="btnRetry">Повторить</button>
+    <details id="errTech" hidden><summary>Технические данные</summary><div class="kv" id="errFacts"></div></details>
   </section>
 
-  <!-- форма входа -->
-  <section class="card" id="vLogin" hidden>
-    <h2>Вход в DataGraph</h2>
-    <p class="muted">Те же email и пароль, что на сайте DataGraph.</p>
-    <form id="loginForm" novalidate>
-      <div class="note warn" id="expiredNote" hidden style="margin-top:14px">Сессия DataGraph закончилась — войдите снова.</div>
-      <label class="field" for="email">Email</label>
-      <input id="email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" required>
-      <label class="field" for="password">Пароль</label>
-      <div class="input-wrap">
-        <input id="password" name="password" type="password" autocomplete="current-password" required>
-        <button type="button" class="eye" id="btnEye" aria-label="Показать пароль">Показать</button>
-      </div>
-      <label class="check" id="rememberRow" hidden>
-        <input type="checkbox" id="remember">
-        <div><b>Запомнить меня</b><span>Бот сохранит пароль в зашифрованном виде и будет сам входить заново, когда сессия DataGraph закончится (она длится сутки). «Выйти» стирает его.</span></div>
-      </label>
-      <div class="note err" id="loginError" hidden style="margin-top:14px"></div>
-      <button type="submit" class="primary" id="btnLogin">Войти</button>
-    </form>
-    <p class="muted" style="margin-top:12px;font-size:13px">Пароль уходит в DataGraph по защищённому соединению и не остаётся в переписке с ботом.</p>
+  <section id="vLogin" hidden>
+    <div class="brand"><b>DATAГРАФ</b><span style="opacity:.9;font-size:14px">Станки, смены и простои — в MAX</span></div>
+    <div class="card">
+      <h2>Вход в DataGraph</h2>
+      <p class="muted small" style="margin:2px 0 0">Те же email и пароль, что на сайте.</p>
+      <form id="loginForm" novalidate>
+        <div class="note warn" id="expiredNote" hidden style="margin-top:14px">Сессия DataGraph закончилась — войдите снова.</div>
+        <label class="field" for="email">Email</label>
+        <input class="inp" id="email" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+        <label class="field" for="password">Пароль</label>
+        <div class="input-wrap">
+          <input class="inp" id="password" type="password" autocomplete="current-password" required>
+          <button type="button" class="eye" id="btnEye" aria-label="Показать пароль">Показать</button>
+        </div>
+        <label class="check" id="rememberRow" hidden>
+          <input type="checkbox" id="remember">
+          <div><b>Запомнить меня</b><span>Бот сам войдёт заново, когда сессия DataGraph закончится (она длится сутки). «Выйти» стирает сохранённый пароль.</span></div>
+        </label>
+        <div class="note err" id="loginError" hidden style="margin-top:14px"></div>
+        <button type="submit" class="btn primary" id="btnLogin">Войти</button>
+      </form>
+      <p class="muted small" style="margin:12px 0 0">Пароль уходит в DataGraph по защищённому соединению и не остаётся в переписке с ботом.</p>
+    </div>
   </section>
 
-  <!-- приложение (после входа) -->
   <div id="vApp" hidden>
     <div class="note ok" id="loginDone" hidden></div>
-    <div class="note err" id="dataError" hidden></div>
-    <section class="card" id="dataLoading" hidden>
-      <div class="spinner" aria-hidden="true"></div>
-      <p class="muted" style="text-align:center">Загружаю данные DataGraph…</p>
-    </section>
-    <div class="updated" id="updatedRow" hidden>
-      <span class="muted small" id="updatedAt"></span>
-      <button type="button" id="btnRefresh">Обновить</button>
-    </div>
-
-    <!-- Обзор (администратор) -->
-    <section id="tOverview" hidden>
-      <div class="card">
-        <h3>Загруженность сейчас</h3>
-        <div class="load"><span class="big" id="ovLoad">—</span><span class="muted" id="ovLoadText"></span></div>
-        <div class="meter" id="ovMeter" aria-hidden="true"></div>
-      </div>
-      <div class="tiles" id="ovTiles"></div>
-      <div class="card" style="margin-top:12px" id="ovTodayCard">
-        <h3>Сегодня</h3>
-        <div class="meter" id="ovTodayMeter" aria-hidden="true" style="margin-top:0"></div>
-        <div class="bar-row" id="ovToday"></div>
-      </div>
-      <div class="card" id="ovLongCard">
-        <h3>Стоят дольше всего</h3>
-        <div id="ovLong"></div>
-      </div>
-    </section>
-
-    <!-- Станки (администратор) -->
-    <section id="tEquipment" hidden>
-      <div class="chips" id="eqChips" role="group" aria-label="Фильтр по состоянию"></div>
-      <input type="search" id="eqSearch" placeholder="Поиск станка, участка, цеха" style="margin-bottom:12px" autocomplete="off">
-      <div id="eqList"></div>
-    </section>
-
-    <!-- Смены (администратор) -->
-    <section id="tShifts" hidden>
-      <div id="shiftList"></div>
-    </section>
-
-    <!-- Моя смена (сотрудник) -->
-    <section id="tMyShift" hidden>
-      <div id="myShift"></div>
-    </section>
-
-    <!-- Профиль -->
-    <section id="tProfile" hidden>
-      <div class="card">
-        <h2 id="pName">—</h2>
-        <p class="muted" id="pRole"></p>
-        <dl>
-          <dt>Email</dt><dd id="pEmail">—</dd>
-          <dt>Сессия DataGraph</dt><dd id="pUntil">—</dd>
-          <dt>Запомнить меня</dt><dd id="pRemember">—</dd>
-        </dl>
-        <button type="button" class="danger" id="btnLogout">Выйти</button>
-        <div class="row2" id="logoutConfirm" hidden>
-          <button type="button" id="btnLogoutNo">Отмена</button>
-          <button type="button" class="danger" id="btnLogoutYes">Да, выйти</button>
-        </div>
-      </div>
-      <details id="tech">
-        <summary>Технические данные</summary>
-        <dl id="facts"></dl>
-      </details>
-    </section>
+    <div class="note err" id="appError" hidden></div>
+    <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v3</footer>
+  <footer>Мини-приложение DataGraph · v4</footer>
 </main>
-
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
 <script>
 (function () {
   'use strict';
-  // API мини-приложения — Workflow 9 в n8n
-  var API = 'https://extra-n8n.tw1.ru/webhook/max-miniapp';
+  var API = 'https://extra-n8n.tw1.ru/webhook/max-miniapp';   // Workflow 9 в n8n
   var REFRESH_MS = 60000;
-
   var WA = window.WebApp || null;
-  var $ = function (id) { return document.getElementById(id); };
   var initData = (WA && WA.initData) || '';
-  var canRemember = false;
-  var profile = null;      // профиль из API
-  var data = null;         // последние данные (action=data)
-  var tab = null;          // текущая вкладка
-  var eqFilter = 'all';
-  var loadedAt = 0, busy = false, timer = null;
+  var $ = function (id) { return document.getElementById(id); };
 
-  var views = ['vLoading', 'vError', 'vLogin', 'vApp'];
-  var show = function (id) {
-    views.forEach(function (v) { $(v).hidden = v !== id; });
-    $('tabs').hidden = id !== 'vApp';
-  };
-  var el = function (tag, cls, text) {
+  // ---------- DOM: всё через textContent, данные в разметку не вставляются ----------
+  function h(tag, attrs) {
     var e = document.createElement(tag);
-    if (cls) e.className = cls;
-    if (text != null) e.textContent = text;
+    var kids = Array.prototype.slice.call(arguments, 2);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (v == null || v === false) return;
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else if (k === 'style') e.setAttribute('style', v);
+      else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? '' : v);
+    });
+    kids.forEach(function (c) { add(e, c); });
     return e;
+  }
+  function add(e, c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) { c.forEach(function (x) { add(e, x); }); return; }
+    e.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(String(c)) : c);
+  }
+  var SVG = {
+    refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+    chevron: '<path d="M9 6l6 6-6 6"/>', back: '<path d="M15 6l-6 6 6 6"/>',
+    now: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+    equipment: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    shifts: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.7 2.6 3 5.2"/>',
+    rating: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+    myshift: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.3-6 8-6s7 2 8 6"/>',
+    work: '<path d="M7 4v16l13-8z"/>', high: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>', idle: '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',
+    down: '<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>', off: '<path d="M2 2l20 20M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 5.2-2.8M19 13a10 10 0 0 0-2.4-1.7M2 8.8a15 15 0 0 1 4.2-2.7M22 8.8A15 15 0 0 0 10.7 5"/><circle cx="12" cy="20" r="1"/>'
   };
-  var clear = function (node) { while (node.firstChild) node.removeChild(node.firstChild); return node; };
-
-  // ---------- технические данные ----------
-  function fact(k, v) {
-    var dt = el('dt', null, k), dd = el('dd', null, v);
-    $('facts').appendChild(dt); $('facts').appendChild(dd);
-  }
-  (function () {
-    var u = (WA && WA.initDataUnsafe) || {};
-    var keys = [];
-    try { keys = initData ? initData.split('&').map(function (p) { return decodeURIComponent(p.split('=')[0]); }) : []; } catch (e) { keys = []; }
-    fact('Библиотека MAX', WA ? 'загружена' : 'не загружена');
-    fact('Платформа', (WA && WA.platform) || '—');
-    fact('Версия MAX', (WA && WA.version) || '—');
-    fact('ID пользователя MAX', u.user && u.user.id != null ? String(u.user.id) : '—');
-    fact('Поля initData', keys.length ? keys.join(', ') : '—');
-  })();
-  function showDebug(debug) {
-    if (!debug) return;
-    Object.keys(debug).forEach(function (k) { var v = debug[k]; fact(k, Array.isArray(v) ? v.join(', ') : String(v)); });
-    // на экране ошибки показываем факты прямо там
-    var box = $('vError'); var d = $('tech'); box.appendChild(d); d.open = true;
+  function icon(name) {
+    var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('fill', 'none'); s.setAttribute('stroke', 'currentColor');
+    s.setAttribute('stroke-width', '2'); s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round'); s.setAttribute('aria-hidden', 'true');
+    s.innerHTML = SVG[name] || '';
+    return s;
   }
 
-  // ---------- запрос к API ----------
+  // ---------- состояния — как на сайте ----------
+  var KIND = { work: 'В работе', high: 'Высокая нагрузка', idle: 'Простой', down: 'Выключен', off: 'Нет связи' };
+  var KIND_SHORT = { work: 'В работе', high: 'Нагрузка', idle: 'Простой', down: 'Выключен', off: 'Нет связи' };
+
+  // ---------- форматирование ----------
+  var tz = null;
+  function fmt(iso, opts) {
+    if (!iso) return '—';
+    var d = new Date(iso); if (isNaN(d)) return '—';
+    var o = Object.assign({}, opts); if (tz) o.timeZone = tz;
+    try { return d.toLocaleString('ru-RU', o); } catch (e) { delete o.timeZone; return d.toLocaleString('ru-RU', o); }
+  }
+  var hm = function (iso) { return fmt(iso, { hour: '2-digit', minute: '2-digit' }); };
+  var dayKey = function (iso) { return fmt(iso, { year: 'numeric', month: '2-digit', day: '2-digit' }); };
+  function sinceText(iso) {
+    if (!iso) return '';
+    return 'с ' + (dayKey(iso) === dayKey(new Date().toISOString()) ? hm(iso) : fmt(iso, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }));
+  }
+  function dur(min) {
+    if (min == null || !isFinite(min)) return '';
+    min = Math.max(0, Math.round(min));
+    if (min < 60) return min + ' мин';
+    var d = Math.floor(min / 1440), hh = Math.floor((min % 1440) / 60), m = min % 60;
+    if (d > 0) return d + ' дн' + (hh ? ' ' + hh + ' ч' : '');
+    return hh + ' ч' + (m ? ' ' + m + ' мин' : '');
+  }
+  function hours(v) {
+    if (v == null || !isFinite(v)) return '—';
+    var t = Math.round(v * 60), hh = Math.floor(t / 60), m = t % 60;
+    return hh ? hh + ' ч' + (m ? ' ' + String(m).padStart(2, '0') + ' мин' : '') : m + ' мин';
+  }
+  function minLabel(m) { return m >= 60 && m % 60 === 0 ? (m / 60) + ' ч' : m + ' мин'; }
+  function plural(n, one, few, many) {
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+    return many;
+  }
+  function initials(name) { return String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function (p) { return p[0].toUpperCase(); }).join(''); }
+  var MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+
+  // ---------- API ----------
   // form-urlencoded — «простой» запрос, браузер не шлёт предварительный OPTIONS
   function call(action, extra) {
     var body = new URLSearchParams(Object.assign({ init: initData, action: action }, extra || {}));
@@ -325,322 +337,459 @@
       .finally(function () { if (t) clearTimeout(t); });
   }
   function netError(e) {
-    return e && e.name === 'AbortError' ? 'Сервер долго не отвечает. Попробуйте ещё раз.'
-         : 'Не удалось связаться с сервером бота. Проверьте интернет и попробуйте ещё раз.';
-  }
-  function showError(title, text) {
-    $('errTitle').textContent = title; $('errText').textContent = text; show('vError');
+    return e && e.name === 'AbortError' ? 'Сервер долго не отвечает. Попробуйте ещё раз.' : 'Не удалось связаться с сервером бота. Проверьте интернет и попробуйте ещё раз.';
   }
 
-  // ---------- форматирование ----------
-  var tz = null;   // пояс предприятия (из API)
-  function fmt(iso, opts) {
-    if (!iso) return '—';
-    var d = new Date(iso);
-    if (isNaN(d)) return '—';
-    var o = Object.assign({}, opts);
-    if (tz) o.timeZone = tz;
-    try { return d.toLocaleString('ru-RU', o); } catch (e) { delete o.timeZone; return d.toLocaleString('ru-RU', o); }
+  // ---------- общие состояния экрана ----------
+  var profile = null, canRemember = false;
+  var tab = null, sub = null;           // sub: { type: 'machine', id }
+  var cache = {};                       // data | machine:<id> | shifts:<day> | rating:<entity>:<month>
+  var loadedAt = {}, busy = {}, timer = null;
+  var ui = { eqFilter: 'all', eqQuery: '', shiftsDay: 'today', ratingEntity: 'users', ratingMonth: null, logoutConfirm: false };
+
+  var views = ['vLoading', 'vError', 'vLogin', 'vApp'];
+  function show(id) { views.forEach(function (v) { $(v).hidden = v !== id; }); $('tabs').hidden = id !== 'vApp'; }
+  function showError(title, text, debug) {
+    $('errTitle').textContent = title; $('errText').textContent = text;
+    var f = $('errFacts'); f.textContent = '';
+    if (debug) { Object.keys(debug).forEach(function (k) { var v = debug[k]; add(f, [h('span', { text: k }), h('span', { text: Array.isArray(v) ? v.join(', ') : String(v) })]); }); }
+    $('errTech').hidden = !debug; $('errTech').open = !!debug;
+    show('vError');
   }
-  var hm = function (iso) { return fmt(iso, { hour: '2-digit', minute: '2-digit' }); };
-  function sinceText(iso) {
-    if (!iso) return '';
-    var d = new Date(iso), now = new Date();
-    var sameDay = fmt(d.toISOString(), { day: 'numeric', month: 'numeric' }) === fmt(now.toISOString(), { day: 'numeric', month: 'numeric' });
-    return 'с ' + (sameDay ? hm(iso) : fmt(iso, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }));
-  }
-  function dur(min) {
-    if (min == null || !isFinite(min)) return '';
-    min = Math.max(0, Math.round(min));
-    if (min < 60) return min + ' мин';
-    var d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), m = min % 60;
-    if (d > 0) return d + ' дн' + (h ? ' ' + h + ' ч' : '');
-    return h + ' ч' + (m ? ' ' + m + ' мин' : '');
-  }
-  function hours(v) {
-    if (v == null || !isFinite(v)) return '—';
-    var t = Math.round(v * 60), h = Math.floor(t / 60), m = t % 60;
-    return h ? h + ' ч' + (m ? ' ' + m + ' мин' : '') : m + ' мин';
-  }
-  function plural(n, one, few, many) {
-    var m10 = n % 10, m100 = n % 100;
-    if (m10 === 1 && m100 !== 11) return one;
-    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
-    return many;
-  }
-  var KIND = {
-    work: 'Работа', high: 'Высокая нагрузка', idle: 'Простой', off: 'Нет связи', unknown: 'Нет данных'
-  };
-  var KIND_SHORT = { work: 'Работа', high: 'Нагрузка', idle: 'Простой', off: 'Нет связи', unknown: 'Нет данных' };
+  function isAdmin() { return profile && profile.role === 'Администратор'; }
 
   // ---------- вкладки ----------
-  var ICONS = {
-    overview: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
-    equipment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
-    shifts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.7 2.6 3 5.2"/></svg>',
-    myshift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
-    profile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.3-6 8-6s7 2 8 6"/></svg>'
-  };
-  var TAB_SECTIONS = { overview: 'tOverview', equipment: 'tEquipment', shifts: 'tShifts', myshift: 'tMyShift', profile: 'tProfile' };
-  function tabsFor(role) {
-    return role === 'Администратор'
-      ? [['overview', 'Обзор'], ['equipment', 'Станки'], ['shifts', 'Смены'], ['profile', 'Профиль']]
-      : [['myshift', 'Смена'], ['profile', 'Профиль']];
-  }
+  var TABS_ADMIN = [['now', 'Сейчас'], ['equipment', 'Станки'], ['shifts', 'Смены'], ['rating', 'Рейтинг'], ['settings', 'Настройки']];
+  var TABS_EMP = [['myshift', 'Смена'], ['profile', 'Профиль']];
+  var TAB_ICON = { now: 'now', equipment: 'equipment', shifts: 'shifts', rating: 'rating', settings: 'settings', myshift: 'myshift', profile: 'profile' };
+  function tabs() { return isAdmin() ? TABS_ADMIN : TABS_EMP; }
   function buildTabs() {
-    var box = clear($('tabsIn'));
-    tabsFor(profile && profile.role).forEach(function (t) {
-      var b = el('button');
-      b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.tab = t[0];
-      b.innerHTML = ICONS[t[0]];
-      b.appendChild(el('span', null, t[1]));
-      b.addEventListener('click', function () { setTab(t[0]); });
-      box.appendChild(b);
+    var box = $('tabsIn'); box.textContent = '';
+    tabs().forEach(function (t) {
+      box.appendChild(h('button', { type: 'button', role: 'tab', 'data-tab': t[0], onclick: function () { setTab(t[0]); } }, icon(TAB_ICON[t[0]]), h('span', { text: t[1] })));
     });
   }
   function setTab(name) {
-    tab = name;
-    Object.keys(TAB_SECTIONS).forEach(function (k) { $(TAB_SECTIONS[k]).hidden = k !== name || (!data && k !== 'profile'); });
-    $('dataLoading').hidden = !!data || name === 'profile';
-    Array.prototype.forEach.call($('tabsIn').children, function (b) { b.setAttribute('aria-selected', b.dataset.tab === name ? 'true' : 'false'); });
-    $('updatedRow').hidden = name === 'profile' || !data;
-    if (name !== 'profile' && Date.now() - loadedAt > 30000) loadData();
-    window.scrollTo(0, 0);
+    tab = name; sub = null; backButton(false);
+    Array.prototype.forEach.call($('tabsIn').children, function (b) { b.setAttribute('aria-selected', b.getAttribute('data-tab') === name ? 'true' : 'false'); });
+    $('appError').hidden = true;
+    render(); ensure(); window.scrollTo(0, 0);
+  }
+  function openMachine(id) { sub = { type: 'machine', id: id }; backButton(true); $('appError').hidden = true; render(); ensure(); window.scrollTo(0, 0); }
+  function closeSub() { sub = null; backButton(false); render(); ensure(); window.scrollTo(0, 0); }
+  // системная кнопка «Назад» MAX — для экрана станка
+  var backBound = false;
+  function backButton(on) {
+    if (!WA || !WA.BackButton) return;
+    try {
+      if (on) { if (!backBound) { WA.BackButton.onClick(closeSub); backBound = true; } WA.BackButton.show(); }
+      else { WA.BackButton.hide(); }
+    } catch (e) { /* старый MAX — есть кнопка «назад» на странице */ }
   }
 
-  // ---------- экраны данных ----------
-  function eqRow(x, opts) {
-    opts = opts || {};
-    var row = el('div', 'eq k-' + x.kind);
-    row.appendChild(el('span', 'dot'));
-    var name = el('div', 'name');
-    name.appendChild(el('b', null, x.name));
-    var sub = opts.sub != null ? opts.sub : [x.unit, x.operator].filter(Boolean).join(' · ');
-    if (sub) name.appendChild(el('span', null, sub));
-    row.appendChild(name);
-    var pill = el('div', 'pill');
-    pill.appendChild(el('i', null, KIND_SHORT[x.kind] || x.kind));
-    var t = x.minutes != null ? dur(x.minutes) : '';
-    if (t) { var s = el('span', null, t); s.title = sinceText(x.since); pill.appendChild(s); }
-    row.appendChild(pill);
-    return row;
+  // какие данные нужны текущему экрану
+  function needKey() {
+    if (sub && sub.type === 'machine') return 'machine:' + sub.id;
+    if (tab === 'shifts') return 'shifts:' + ui.shiftsDay;
+    if (tab === 'rating') return 'rating:' + ui.ratingEntity + ':' + (ui.ratingMonth || '');
+    if (tab === 'profile') return null;
+    return 'data';
   }
+  function request(key) {
+    if (key === 'data') return call('data');
+    var p = key.split(':');
+    if (p[0] === 'machine') return call('machine', { eq: p[1] });
+    if (p[0] === 'shifts') return call('shifts', { day: p[1] });
+    if (p[0] === 'rating') return call('rating', p[2] ? { entity: p[1], month: p[2] } : { entity: p[1] });
+  }
+  function ensure(force) {
+    var key = needKey();
+    if (!key || busy[key]) return;
+    if (!force && cache[key] && Date.now() - (loadedAt[key] || 0) < 30000) return;
+    busy[key] = true; render();
+    request(key).then(function (resp) {
+      if (resp.ok) {
+        cache[key] = resp; loadedAt[key] = Date.now(); tz = resp.tz || tz;
+        $('appError').hidden = true;
+        return;
+      }
+      if (resp.error === 'not_authorized' || resp.error === 'session_expired') {
+        if (resp.error === 'session_expired' && profile && profile.remember) { appError(resp.message); return; }
+        applyProfile(resp); return;
+      }
+      if (resp.error === 'bad_signature' || resp.error === 'init_expired') { showError('Откройте заново', resp.message, resp.debug); return; }
+      appError(resp.message || 'Не удалось загрузить данные.');
+    }).catch(function (e) { appError(netError(e)); })
+      .finally(function () { busy[key] = false; if (profile && profile.state === 'authorized') render(); });
+  }
+  function appError(msg) { $('appError').textContent = msg; $('appError').hidden = false; }
+  function startTimer() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(function () {
+      if (document.visibilityState === 'hidden' || !profile || profile.state !== 'authorized') return;
+      var ae = document.activeElement;
+      if (ae && (ae.classList.contains('search') || ae.tagName === 'SELECT')) return;   // не мешаем вводу
+      var key = needKey();
+      if (key && key.indexOf('rating:') !== 0) ensure(true);
+    }, REFRESH_MS);
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && profile && profile.state === 'authorized') ensure(); });
 
-  function renderOverview() {
-    var s = data.summary || {};
-    $('ovLoad').textContent = s.load_pct != null ? s.load_pct + '%' : '—';
-    $('ovLoadText').textContent = s.working != null ? s.working + ' из ' + s.load_total + ' ' + plural(s.load_total, 'станка', 'станков', 'станков') + ' работают' : '';
-    var m = clear($('ovMeter'));
+  // ---------- части экранов ----------
+  function header(title, subText, refreshKey) {
+    var right = refreshKey ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Обновить', onclick: function () { ensure(true); } }, icon('refresh')) : null;
+    if (right && busy[refreshKey]) right.firstChild.classList.add('spin');
+    return h('div', { class: 'head' }, h('div', null, h('h1', { text: title }), subText ? h('div', { class: 'muted small', text: subText }) : null), right);
+  }
+  function loading() { return h('div', { class: 'card' }, h('div', { class: 'spinner', 'aria-hidden': 'true' }), h('p', { class: 'muted', style: 'text-align:center;margin:0', text: 'Загружаю данные DataGraph…' })); }
+  function emptyCard(text) { return h('div', { class: 'card' }, h('div', { class: 'empty', text: text })); }
+  function updated(d) { return d && d.generated_at ? 'Обновлено в ' + hm(d.generated_at) + (d.partial ? ' · часть данных не загрузилась' : '') : ''; }
+  function eqRow(x, subText) {
+    var k = x.kind || 'off';
+    return h('button', { type: 'button', class: 'row k-' + k, onclick: function () { openMachine(x.id); } },
+      h('span', { class: 'dot' }),
+      h('div', { class: 'main' }, h('b', { text: x.name }), (subText != null ? subText : [x.workshop || x.unit, x.operator].filter(Boolean).join(' · ')) ? h('span', { text: subText != null ? subText : [x.workshop || x.unit, x.operator].filter(Boolean).join(' · ') }) : null),
+      h('div', { class: 'side' }, h('span', { class: 'pill', text: KIND_SHORT[k] }), x.minutes != null ? h('span', { class: 't', title: sinceText(x.since), text: dur(x.minutes) }) : null));
+  }
+  function stack(parts) {   // parts: [[kind, value]]
+    var total = parts.reduce(function (s, p) { return s + (p[1] || 0); }, 0);
+    var e = h('div', { class: 'stack', 'aria-hidden': 'true' });
+    if (total) parts.forEach(function (p) { if (p[1]) e.appendChild(h('span', { class: 'k-' + p[0], style: 'width:' + (p[1] / total * 100) + '%' })); });
+    return e;
+  }
+  function legendRow(kind, label, value) { return [h('span', { class: 'l k-' + kind }, h('span', { class: 'dot' }), label), h('span', { class: 'v', text: value })]; }
+
+  // ===== администратор: «Сейчас» =====
+  function screenNow(d) {
+    var s = d.summary || {}, out = [];
+    out.push(header('Сейчас', updated(d), 'data'));
     var tot = s.total || 0;
-    ['work', 'high', 'idle', 'off', 'unknown'].forEach(function (k) {
-      if (!s[k] || !tot) return;
-      var sp = el('span', 'k-' + k); sp.style.width = (s[k] / tot * 100) + '%'; sp.style.background = 'var(--c)';
-      m.appendChild(sp);
+    var bar = h('div', { class: 'bar', 'aria-hidden': 'true' });
+    [['work', (s.work || 0) + (s.high || 0), '#7FE09A'], ['idle', s.idle, '#FFD27A'], ['down', s.down, '#D9D9DE'], ['off', s.off, '#FF9A9D']].forEach(function (p) {
+      if (p[1] && tot) bar.appendChild(h('span', { style: 'width:' + (p[1] / tot * 100) + '%;background:' + p[2] }));
     });
-    var tiles = clear($('ovTiles'));
-    [['work', 'equipment'], ['high', 'equipment'], ['idle', 'equipment'], ['off', 'equipment']].forEach(function (p) {
-      var k = p[0];
-      var b = el('button', 'tile k-' + k); b.type = 'button';
-      b.appendChild(el('b', null, String(s[k] || 0)));
-      var lbl = el('span'); lbl.appendChild(el('i', 'dot')); lbl.appendChild(document.createTextNode(KIND[k]));
-      lbl.firstChild.style.marginRight = '6px';
-      b.appendChild(lbl);
-      b.addEventListener('click', function () { eqFilter = k; setTab('equipment'); renderEquipment(); });
-      tiles.appendChild(b);
+    out.push(h('div', { class: 'hero' },
+      h('div', { style: 'font-size:14px;opacity:.85', text: 'Текущая загруженность' }),
+      h('div', { style: 'display:flex;align-items:baseline;gap:10px;margin-top:6px;flex-wrap:wrap' },
+        h('span', { class: 'big', text: s.load_pct != null ? s.load_pct + '%' : '—' }),
+        h('span', { style: 'font-size:14px;opacity:.9', text: s.working != null ? s.working + ' из ' + s.load_total + ' ' + plural(s.load_total, 'станка', 'станков', 'станков') + ' в работе' : '' })),
+      bar));
+    var tiles = h('div', { class: 'tiles' });
+    [['work', 'В работе', (s.work || 0) + (s.high || 0)], ['idle', 'Простой', s.idle || 0], ['down', 'Выключен', s.down || 0], ['off', 'Нет связи', s.off || 0]].forEach(function (t) {
+      tiles.appendChild(h('button', { type: 'button', class: 'tile k-' + t[0], onclick: function () { ui.eqFilter = t[0]; setTab('equipment'); } },
+        h('b', { text: String(t[2]) }), h('span', null, h('span', { class: 'dot' }), t[1])));
     });
-    var t = data.today || {};
-    var sum = (t.work || 0) + (t.nowork || 0) + (t.off || 0);
-    $('ovTodayCard').hidden = !sum;
-    var tm = clear($('ovTodayMeter')), tb = clear($('ovToday'));
-    [['work', 'Работа', 'work'], ['nowork', 'Простой', 'idle'], ['off', 'Нет связи', 'off']].forEach(function (p) {
-      var v = t[p[0]] || 0;
-      if (sum && v) { var sp = el('span', 'k-' + p[2]); sp.style.width = (v / sum * 100) + '%'; sp.style.background = 'var(--c)'; tm.appendChild(sp); }
-      var l = el('span'); var d = el('i', 'dot k-' + p[2]); d.style.marginRight = '8px'; l.appendChild(d); l.appendChild(document.createTextNode(p[1]));
-      tb.appendChild(l);
-      tb.appendChild(el('span', 'v', hours(v) + (sum ? ' · ' + Math.round(v / sum * 100) + '%' : '')));
-    });
-    var long = (data.equipment || []).filter(function (x) { return (x.kind === 'idle' || x.kind === 'off') && x.minutes != null; })
-      .sort(function (a, b) { return b.minutes - a.minutes; }).slice(0, 5);
-    var box = clear($('ovLong'));
-    $('ovLongCard').hidden = false;
-    if (!long.length) box.appendChild(el('div', 'empty', 'Все станки работают.'));
-    long.forEach(function (x) { box.appendChild(eqRow(x)); });
+    out.push(tiles);
+    var att = d.attention || [], th = d.thresholds || {};
+    var ac = h('div', { class: 'card' },
+      h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:8px' }, h('p', { class: 'card-title', text: 'Обратите внимание' }), att.length ? h('span', { class: 'pill k-idle', text: String(att.length) }) : null),
+      h('div', { class: 'muted small', text: 'Дольше вашего порога: простой ' + minLabel(th.idle || 20) + ', нет связи ' + minLabel(th.off || 30) + ', выключен на смене ' + minLabel(th.down || 60) }));
+    if (!att.length) ac.appendChild(h('div', { class: 'empty', text: 'Всё в порядке — дольше порога никто не стоит.' }));
+    att.slice(0, 8).forEach(function (x) { ac.appendChild(eqRow(x)); });
+    if (att.length > 8) ac.appendChild(h('button', { type: 'button', class: 'btn', text: 'Показать все (' + att.length + ')', onclick: function () { ui.eqFilter = 'all'; setTab('equipment'); } }));
+    out.push(ac);
+    var t = d.today || {};
+    var sum = (t.work || 0) + (t.high || 0) + (t.nowork || 0) + (t.off || 0);
+    if (sum) {
+      var pct = function (v) { return Math.round((v || 0) / sum * 100) + '%'; };
+      out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Сегодня' }), h('div', { style: 'margin-top:10px' }, stack([['work', (t.work || 0) + (t.high || 0)], ['idle', t.nowork], ['down', t.off]])),
+        h('div', { class: 'legend' }, legendRow('work', 'В работе', hours((t.work || 0) + (t.high || 0)) + ' · ' + pct((t.work || 0) + (t.high || 0))), legendRow('idle', 'Простой', hours(t.nowork) + ' · ' + pct(t.nowork)), legendRow('down', 'Выключен', hours(t.off) + ' · ' + pct(t.off)))));
+    }
+    var sn = d.shifts_now || {};
+    out.push(h('button', { type: 'button', class: 'card link-card', onclick: function () { ui.shiftsDay = 'today'; setTab('shifts'); } },
+      h('div', { style: 'flex:1' }, h('p', { class: 'card-title', text: 'Смены сейчас' }),
+        h('div', { class: 'muted small', text: sn.count ? sn.count + ' ' + plural(sn.count, 'смена', 'смены', 'смен') + ' · ' + sn.people + ' ' + plural(sn.people, 'человек', 'человека', 'человек') + ', ' + sn.equipment + ' ' + plural(sn.equipment, 'станок', 'станка', 'станков') : 'Сейчас никого на смене' }),
+        sn.without ? h('div', { style: 'color:var(--warn);font-weight:600;font-size:14px;margin-top:4px', text: sn.without + ' ' + plural(sn.without, 'сотрудник', 'сотрудника', 'сотрудников') + ' без станков' }) : null),
+      icon('chevron')));
+    return out;
   }
 
-  function renderEquipment() {
-    var all = data.equipment || [];
+  // ===== администратор: «Станки» =====
+  function screenEquipment(d) {
+    var all = d.equipment || [], out = [header('Станки', updated(d), 'data')];
+    var kindOf = function (x) { return x.kind === 'high' ? 'work' : x.kind; };
     var counts = { all: all.length };
-    all.forEach(function (x) { counts[x.kind] = (counts[x.kind] || 0) + 1; });
-    var chips = clear($('eqChips'));
-    [['all', 'Все'], ['idle', 'Простой'], ['off', 'Нет связи'], ['work', 'Работа'], ['high', 'Нагрузка'], ['unknown', 'Нет данных']].forEach(function (c) {
-      if (c[0] !== 'all' && !counts[c[0]]) return;
-      var b = el('button', 'chip', c[1] + ' ' + (counts[c[0]] || 0)); b.type = 'button';
-      b.setAttribute('aria-pressed', eqFilter === c[0] ? 'true' : 'false');
-      b.addEventListener('click', function () { eqFilter = c[0]; renderEquipment(); });
-      chips.appendChild(b);
+    all.forEach(function (x) { var k = kindOf(x); counts[k] = (counts[k] || 0) + 1; });
+    var chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Фильтр по состоянию' });
+    [['all', 'Все'], ['idle', 'Простой'], ['off', 'Нет связи'], ['down', 'Выключен'], ['work', 'В работе']].forEach(function (c) {
+      if (c[0] !== 'all' && !counts[c[0]] && ui.eqFilter !== c[0]) return;
+      chips.appendChild(h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.eqFilter === c[0] ? 'true' : 'false', text: c[1] + ' ' + (counts[c[0]] || 0), onclick: function () { ui.eqFilter = c[0]; render(); } }));
     });
-    var q = $('eqSearch').value.trim().toLowerCase();
-    var list = all.filter(function (x) {
-      if (eqFilter !== 'all' && x.kind !== eqFilter) return false;
-      if (!q) return true;
-      return [x.name, x.unit, x.workshop, x.operator].join(' ').toLowerCase().indexOf(q) !== -1;
-    });
-    // простои и «нет связи» — наверх, внутри — дольше стоящие выше
-    var order = { idle: 0, off: 1, unknown: 2, high: 3, work: 4 };
-    list.sort(function (a, b) { return (order[a.kind] - order[b.kind]) || ((b.minutes || 0) - (a.minutes || 0)) || a.name.localeCompare(b.name, 'ru'); });
-    var box = clear($('eqList'));
-    if (!list.length) { var c0 = el('div', 'card'); c0.appendChild(el('div', 'empty', 'Ничего не найдено.')); box.appendChild(c0); return; }
-    var groups = {};
-    list.forEach(function (x) { var g = x.workshop || 'Без цеха'; (groups[g] = groups[g] || []).push(x); });
-    Object.keys(groups).sort(function (a, b) { return a.localeCompare(b, 'ru'); }).forEach(function (g) {
-      var card = el('div', 'card');
-      card.appendChild(el('h3', null, g + ' · ' + groups[g].length));
-      groups[g].forEach(function (x) { card.appendChild(eqRow(x)); });
-      box.appendChild(card);
-    });
+    out.push(chips);
+    var search = h('input', { type: 'search', class: 'search', placeholder: 'Поиск станка, участка, оператора', 'aria-label': 'Поиск станка', value: ui.eqQuery, autocomplete: 'off' });
+    search.addEventListener('input', function () { ui.eqQuery = search.value; renderList(); });
+    out.push(search);
+    var listBox = h('div');
+    out.push(listBox);
+    function renderList() {
+      listBox.textContent = '';
+      var q = ui.eqQuery.trim().toLowerCase();
+      var order = { idle: 0, off: 1, down: 2, high: 3, work: 4 };
+      var list = all.filter(function (x) {
+        if (ui.eqFilter !== 'all' && kindOf(x) !== ui.eqFilter) return false;
+        return !q || [x.name, x.unit, x.workshop, x.operator].join(' ').toLowerCase().indexOf(q) !== -1;
+      }).sort(function (a, b) { return (order[a.kind] - order[b.kind]) || ((b.minutes || 0) - (a.minutes || 0)) || a.name.localeCompare(b.name, 'ru'); });
+      if (!list.length) { listBox.appendChild(emptyCard(q ? 'Ничего не найдено.' : 'Таких станков сейчас нет.')); return; }
+      var groups = {};
+      list.forEach(function (x) { var g = x.workshop || 'Без цеха'; (groups[g] = groups[g] || []).push(x); });
+      Object.keys(groups).sort(function (a, b) { return a.localeCompare(b, 'ru'); }).forEach(function (g) {
+        listBox.appendChild(h('div', { class: 'group', text: g + ' · ' + groups[g].length }));
+        var c = h('div', { class: 'card list' });
+        groups[g].forEach(function (x) { c.appendChild(eqRow(x, [x.unit, x.operator].filter(Boolean).join(' · '))); });
+        listBox.appendChild(c);
+      });
+    }
+    renderList();
+    return out;
   }
 
-  function shiftCard(sh, mine) {
-    var card = el('div', 'card');
-    var head = el('div', 'shift-head');
-    var left = el('div');
-    left.appendChild(el('h2', null, mine ? (sh.title || 'Моя смена') : sh.user));
-    var time = sh.start && sh.finish ? fmt(sh.start, { day: 'numeric', month: 'long' }) + ', ' + hm(sh.start) + '–' + hm(sh.finish) : '';
-    var sub = mine ? time : [sh.title, time].filter(Boolean).join(' · ');
-    if (sub) left.appendChild(el('p', 'muted', sub));
-    if (sh.assignment) left.appendChild(el('p', 'muted small', sh.assignment));
-    head.appendChild(left);
-    if (!sh.equipment.length) head.appendChild(el('span', 'badge-warn', 'без станков'));
-    card.appendChild(head);
-    if (sh.equipment.length) {
-      var wrap = el('div'); wrap.style.marginTop = '8px';
-      sh.equipment.forEach(function (x) { wrap.appendChild(eqRow(x, { sub: x.unit || '' })); });
-      card.appendChild(wrap);
-    } else if (mine) {
-      card.appendChild(el('p', 'muted', 'Оборудование не назначено. Добавить его можно в чате бота: «Моя смена» → «Добавить оборудование».'));
-    }
-    return card;
-  }
-  function renderShifts() {
-    var box = clear($('shiftList'));
-    var list = (data.shifts || []).slice().sort(function (a, b) { return (a.equipment.length ? 1 : 0) - (b.equipment.length ? 1 : 0) || a.user.localeCompare(b.user, 'ru'); });
-    if (!list.length) { var c0 = el('div', 'card'); c0.appendChild(el('div', 'empty', 'Сейчас нет открытых смен.')); box.appendChild(c0); return; }
-    var without = list.filter(function (s) { return !s.equipment.length; }).length;
-    var head = el('p', 'muted', list.length + ' ' + plural(list.length, 'смена', 'смены', 'смен') + (without ? ', без станков: ' + without : ''));
-    head.style.margin = '0 2px 10px';
-    box.appendChild(head);
-    list.forEach(function (s) { box.appendChild(shiftCard(s, false)); });
-  }
-  function renderMyShift() {
-    var box = clear($('myShift'));
-    if (!data.my_shift) {
-      var c0 = el('div', 'card');
-      c0.appendChild(el('h2', null, 'Активной смены нет'));
-      c0.appendChild(el('p', 'muted', 'Смена назначается на сайте DataGraph.'));
-      box.appendChild(c0); return;
-    }
-    box.appendChild(shiftCard(data.my_shift, true));
-  }
-  function renderData() {
-    if (!data) return;
-    tz = data.tz || tz;
-    $('updatedAt').textContent = 'Обновлено в ' + fmt(data.generated_at, { hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
-      (data.partial ? ' · часть данных не загрузилась' : '');
-    $('dataLoading').hidden = true;
-    if (tab && tab !== 'profile') $(TAB_SECTIONS[tab]).hidden = false;
-    if (data.summary) { renderOverview(); renderEquipment(); renderShifts(); }
-    if ('my_shift' in data) renderMyShift();
-    $('updatedRow').hidden = tab === 'profile';
+  // ===== карточка станка =====
+  function screenMachine(d) {
+    var m = d.machine, out = [];
+    out.push(h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'));
+    out.push(h('h1', { style: 'margin:6px 0 2px;font-size:24px;line-height:30px', text: m.name }));
+    out.push(h('div', { class: 'muted', style: 'font-size:14px;margin-bottom:14px', text: [m.workshop, m.unit].filter(Boolean).join(' · ') || ' ' }));
+    var k = m.kind || 'off';
+    out.push(h('div', { class: 'card status-big k-' + k },
+      h('div', { class: 'ico' }, icon(k)),
+      h('div', { style: 'flex:1' }, h('span', { class: 'pill', text: KIND[k] }),
+        h('div', { style: 'font-size:22px;font-weight:700;margin-top:4px', text: m.minutes != null ? dur(m.minutes) : '—' }),
+        h('div', { class: 'muted small', text: [sinceText(m.since), (k === 'idle' || k === 'off' || k === 'down') && m.threshold ? 'порог уведомления ' + minLabel(m.threshold) : ''].filter(Boolean).join(' · ') }))));
+    var shiftBox = h('div', { class: 'kv' });
+    if (m.shift) add(shiftBox, [h('span', { class: 'muted', text: 'Оператор' }), h('span', { text: m.shift.user || '—' }), h('span', { class: 'muted', text: 'Смена' }), h('span', { text: m.shift.title || (m.shift.start && m.shift.finish ? hm(m.shift.start) + '–' + hm(m.shift.finish) : '—') })]);
+    out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Смена' }), m.shift ? shiftBox : h('div', { class: 'muted small', text: 'Сейчас станок ни за кем не закреплён.' })));
+    // загрузка за сегодня — по часам
+    var nowHour = Number(fmt(new Date().toISOString(), { hour: '2-digit', hour12: false })) || 0;
+    var bars = h('div', { class: 'bars', role: 'img', 'aria-label': 'Загрузка по часам за сегодня' });
+    (d.today_hours || []).forEach(function (x) {
+      var col = h('div', { class: 'col' + (x.empty ? ' nodata' : ''), title: String(x.h).padStart(2, '0') + ':00' });
+      if (x.empty && x.h <= nowHour) col.className = 'col';      // прошедший час без данных
+      if (!x.empty) [['work', x.work], ['high', x.high], ['idle', x.idle], ['down', x.off]].forEach(function (p) { if (p[1]) col.appendChild(h('span', { class: 'k-' + p[0], style: 'height:' + Math.min(100, p[1] / 60 * 100) + '%' })); });
+      bars.appendChild(col);
+    });
+    var tt = d.today_total || {};
+    out.push(h('div', { class: 'card' },
+      h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('p', { class: 'card-title', text: 'Загрузка за сегодня' }), h('span', { class: 'muted small', text: 'по часам' })),
+      bars, h('div', { class: 'axis' }, h('span', { text: '00' }), h('span', { text: '06' }), h('span', { text: '12' }), h('span', { text: '18' }), h('span', { text: '24' })),
+      h('div', { class: 'legend' }, legendRow('work', 'В работе', hours((tt.work || 0) + (tt.high || 0))), legendRow('idle', 'Простой', hours(tt.nowork)), legendRow('down', 'Выключен', hours(tt.off)),
+        [h('span', { class: 'l' }, h('span', { class: 'dot', style: 'background:var(--c-nodata)' }), 'Нет данных · ещё не наступило'), h('span', { class: 'v', text: '' })])));
+    // неделя
+    var wk = h('div', { class: 'week', role: 'img', 'aria-label': 'Загрузка по дням недели' }), ax = h('div', { class: 'week-axis' });
+    var DOW = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+    (d.week || []).forEach(function (x, i) {
+      var col = h('div', { class: 'col' });
+      if (!x.empty) [['work', (x.work || 0) + (x.high || 0)], ['idle', x.idle], ['down', x.off]].forEach(function (p) { if (p[1]) col.appendChild(h('span', { class: 'k-' + p[0], style: 'height:' + Math.min(100, p[1] / 24 * 100) + '%' })); });
+      wk.appendChild(col); ax.appendChild(h('span', { class: x.today ? 'on' : null, text: DOW[i] }));
+    });
+    var wt = d.week_total || {};
+    out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Эта неделя' }), wk, ax,
+      h('div', { class: 'legend' }, legendRow('work', 'В работе', hours(wt.work)), legendRow('idle', 'Простой', hours(wt.nowork)), legendRow('down', 'Выключен', hours(wt.off)))));
+    out.push(h('p', { class: 'muted small', style: 'text-align:center', text: updated(d) }));
+    return out;
   }
 
-  // ---------- профиль ----------
-  function renderProfile() {
+  // ===== администратор: «Смены» =====
+  function screenShifts(d) {
+    var out = [header('Смены', d ? updated(d) : '', 'shifts:' + ui.shiftsDay)];
+    var seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'День' });
+    [['today', 'Сегодня'], ['tomorrow', 'Завтра']].forEach(function (p) {
+      seg.appendChild(h('button', { type: 'button', 'aria-pressed': ui.shiftsDay === p[0] ? 'true' : 'false', text: p[1], onclick: function () { ui.shiftsDay = p[0]; render(); ensure(); } }));
+    });
+    out.push(seg);
+    if (!d) { out.push(loading()); return out; }
+    var list = d.shifts || [];
+    if (!list.length) { out.push(emptyCard(ui.shiftsDay === 'today' ? 'На сегодня смен нет.' : 'На завтра смен нет.')); return out; }
+    var groups = [['running', 'Идут сейчас'], ['planned', ui.shiftsDay === 'today' ? 'Впереди' : 'Запланированы'], ['finished', 'Закончились']];
+    groups.forEach(function (g) {
+      var items = list.filter(function (s) { return s.status === g[0]; });
+      if (!items.length) return;
+      var without = items.filter(function (s) { return !s.equipment.length; }).length;
+      out.push(h('div', { class: 'group', text: g[1] + ' · ' + items.length + (without ? ', без станков: ' + without : '') }));
+      items.forEach(function (s) {
+        var c = h('div', { class: 'card' + (!s.equipment.length && s.status !== 'finished' ? ' warn-border' : '') });
+        c.appendChild(h('div', { class: 'sh-head' }, h('div', { class: 'av', text: initials(s.full_name || s.user) }),
+          h('div', { style: 'flex:1;min-width:0' }, h('div', { style: 'font-weight:600', text: s.full_name || s.user }),
+            h('div', { class: 'muted small', text: [s.workshop, s.title || (s.start && s.finish ? hm(s.start) + '–' + hm(s.finish) : '')].filter(Boolean).join(' · ') })),
+          !s.equipment.length ? h('span', { class: 'pill k-idle', text: 'без станков' }) : null));
+        s.equipment.forEach(function (x) {
+          var k = x.kind;
+          c.appendChild(h('button', { type: 'button', class: 'sh-eq' + (k ? ' k-' + k : ''), onclick: function () { openMachine(x.id); } },
+            k ? h('span', { class: 'dot' }) : h('span', { class: 'dot', style: 'background:var(--line)' }),
+            h('span', { class: 'n', text: x.name }),
+            k ? h('span', { class: 'small', style: 'color:var(--t);font-weight:600', text: KIND_SHORT[k].toLowerCase() + (x.minutes != null && k !== 'work' && k !== 'high' ? ' ' + dur(x.minutes) : '') }) : null));
+        });
+        if (!s.equipment.length && s.status !== 'finished') c.appendChild(h('div', { class: 'muted small', style: 'margin-top:8px', text: 'Назначить станки пока можно в боте: Панель → «Назначить оборудование».' }));
+        out.push(c);
+      });
+    });
+    return out;
+  }
+
+  // ===== администратор: «Рейтинг» =====
+  function screenRating(d) {
+    var out = [];
+    var monthSel = h('select', { class: 'select', 'aria-label': 'Месяц', onchange: function () { ui.ratingMonth = this.value; render(); ensure(); } });
+    var months = (d && d.months) || (ui.ratingMonth ? [ui.ratingMonth] : []);
+    months.forEach(function (m) { var o = h('option', { value: m, text: MONTHS[Number(m.slice(5)) - 1] + ' ' + m.slice(0, 4) }); if (m === (ui.ratingMonth || (d && d.month))) o.selected = true; monthSel.appendChild(o); });
+    out.push(h('div', { class: 'head' }, h('h1', { text: 'Рейтинг' }), months.length ? monthSel : null));
+    var seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Что показать' });
+    [['users', 'Сотрудники'], ['equipments', 'Оборудование']].forEach(function (p) {
+      seg.appendChild(h('button', { type: 'button', 'aria-pressed': ui.ratingEntity === p[0] ? 'true' : 'false', text: p[1], onclick: function () { ui.ratingEntity = p[0]; render(); ensure(); } }));
+    });
+    out.push(seg);
+    out.push(h('div', { class: 'muted small', style: 'margin:0 4px 10px', text: 'Часы в работе за месяц · место по сравнению с прошлым месяцем' }));
+    if (!d) { out.push(loading()); return out; }
+    var rows = d.rows || [];
+    if (!rows.length) { out.push(emptyCard('Данных для рейтинга нет.')); return out; }
+    var c = h('div', { class: 'card list' });
+    rows.forEach(function (x) {
+      var mv = x.move == null ? '—' : x.move > 0 ? '▲ ' + x.move : x.move < 0 ? '▼ ' + (-x.move) : '—';
+      c.appendChild(h('div', { class: 'row', style: 'cursor:default' },
+        h('div', { class: 'pos' + (x.pos <= 3 ? ' top' : ''), text: String(x.pos) }),
+        h('div', { class: 'main' }, h('b', { text: x.name }), h('span', { text: [x.place, x.percent != null ? 'эффективность ' + String(x.percent).replace('.', ',') + '%' : ''].filter(Boolean).join(' · ') })),
+        h('div', { class: 'side' }, h('div', { style: 'font-weight:700;font-size:15px', text: hours(x.hours) }), h('div', { class: 'small ' + (x.move > 0 ? 'move-up' : x.move < 0 ? 'move-down' : 'muted'), style: 'font-weight:600', text: mv }))));
+    });
+    out.push(c);
+    return out;
+  }
+
+  // ===== настройки (админ) и профиль =====
+  var NOTIF_META = [['idle', 'Простой'], ['off', 'Нет связи'], ['down', 'Выключен на смене'], ['high', 'Высокая нагрузка']];
+  var MINS = [15, 30, 60, 120, 180], DELS = [1, 5, 10, 30, 60];
+  function saveNotif(kind, field, value, el) {
+    var d = cache.data; if (!d || !d.notif) return;
+    var prev = Object.assign({}, d.notif[kind]);
+    d.notif[kind][field] = field === 'enabled' ? value === 1 : value; render();
+    call('notif_set', { kind: kind, field: field, value: String(value) }).then(function (resp) {
+      if (!resp.ok) throw new Error(resp.message || 'Не удалось сохранить.');
+      d.notif = resp.notif || d.notif;
+      if (d.thresholds) { d.thresholds.idle = d.notif.idle.min; d.thresholds.off = d.notif.off.min; d.thresholds.down = d.notif.down.min; }
+      loadedAt.data = 0;                       // «Обратите внимание» пересчитается по новому порогу
+    }).catch(function (e) { d.notif[kind] = prev; appError(e && e.message ? e.message : 'Не удалось сохранить.'); })
+      .finally(render);
+  }
+  function accountCard() {
     var p = profile;
-    $('who').textContent = p.full_name ? p.short_name || p.full_name : '';
-    $('pName').textContent = p.full_name || p.email || 'Вы вошли';
-    $('pRole').textContent = p.role || '';
-    $('pEmail').textContent = p.email || '—';
-    $('pUntil').textContent = p.session_until ? 'до ' + fmt(p.session_until, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '—';
-    $('pRemember').textContent = p.remember ? 'да — бот продлит сам' : 'нет';
-    $('logoutConfirm').hidden = true; $('btnLogout').hidden = false;
+    var c = h('div', { class: 'card' },
+      h('div', { style: 'font-weight:600;font-size:17px', text: p.full_name || p.email || 'Вы вошли' }),
+      h('div', { class: 'muted small', style: 'margin-bottom:6px', text: p.role || '' }),
+      h('div', { class: 'kv' }, h('span', { class: 'muted', text: 'Email' }), h('span', { text: p.email || '—' }),
+        h('span', { class: 'muted', text: 'Сессия DataGraph' }), h('span', { text: p.session_until ? 'до ' + fmt(p.session_until, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '—' }),
+        h('span', { class: 'muted', text: 'Запомнить меня' }), h('span', { style: p.remember ? 'color:var(--ok);font-weight:600' : null, text: p.remember ? 'включено' : 'нет' })));
+    if (!ui.logoutConfirm) c.appendChild(h('button', { type: 'button', class: 'btn danger', text: 'Выйти', onclick: function () { ui.logoutConfirm = true; render(); } }));
+    else c.appendChild(h('div', { style: 'display:flex;gap:8px' },
+      h('button', { type: 'button', class: 'btn', text: 'Отмена', onclick: function () { ui.logoutConfirm = false; render(); } }),
+      h('button', { type: 'button', class: 'btn danger', text: 'Да, выйти', onclick: logout })));
+    return c;
+  }
+  function techDetails() {
+    var u = (WA && WA.initDataUnsafe) || {};
+    var kv = h('div', { class: 'kv' });
+    [['Платформа', (WA && WA.platform) || '—'], ['Версия MAX', (WA && WA.version) || '—'], ['ID пользователя MAX', u.user && u.user.id != null ? String(u.user.id) : '—']].forEach(function (f) { add(kv, [h('span', { text: f[0] }), h('span', { text: f[1] })]); });
+    return h('details', null, h('summary', { text: 'Технические данные' }), kv);
+  }
+  function screenSettings(d) {
+    var out = [h('h1', { style: 'margin-bottom:4px', text: 'Настройки' }), h('div', { class: 'muted small', style: 'margin:0 0 12px', text: 'Уведомления общие с ботом: поменяли здесь — работают и в чате.' })];
+    if (!d || !d.notif) { out.push(loading()); }
+    else NOTIF_META.forEach(function (m) {
+      var k = m[0], v = d.notif[k] || {};
+      var c = h('div', { class: 'card' },
+        h('div', { style: 'display:flex;align-items:center;gap:12px' },
+          h('span', { class: 'dot k-' + k, style: 'width:10px;height:10px' }),
+          h('div', { style: 'flex:1' }, h('div', { style: 'font-weight:600;font-size:16px', text: m[1] }), h('div', { class: 'muted small', text: v.enabled ? 'дольше ' + minLabel(v.min) + ' · удалить через ' + minLabel(v.del) : 'выключены' })),
+          h('button', { type: 'button', class: 'sw', role: 'switch', 'aria-checked': v.enabled ? 'true' : 'false', 'aria-label': 'Уведомления: ' + m[1], onclick: function () { saveNotif(k, 'enabled', v.enabled ? 0 : 1); } })));
+      if (v.enabled) {
+        var o1 = h('div', { class: 'opts' }), o2 = h('div', { class: 'opts' });
+        MINS.forEach(function (x) { o1.appendChild(h('button', { type: 'button', 'aria-pressed': v.min === x ? 'true' : 'false', text: minLabel(x), onclick: function () { if (v.min !== x) saveNotif(k, 'min', x); } })); });
+        DELS.forEach(function (x) { o2.appendChild(h('button', { type: 'button', 'aria-pressed': v.del === x ? 'true' : 'false', text: minLabel(x), onclick: function () { if (v.del !== x) saveNotif(k, 'del', x); } })); });
+        add(c, [h('div', { class: 'opt-label', text: k === 'down' ? 'Порог — станок на смене выключен дольше' : 'Порог — сообщение придёт, если дольше' }), o1, h('div', { class: 'opt-label', text: 'Удалить уведомление из чата через' }), o2]);
+      }
+      out.push(c);
+    });
+    out.push(accountCard());
+    out.push(techDetails());
+    return out;
+  }
+  function screenProfile() { return [h('h1', { style: 'margin-bottom:14px', text: 'Профиль' }), accountCard(), techDetails()]; }
+
+  // ===== сотрудник: «Смена» =====
+  function screenMyShift(d) {
+    var out = [header('Моя смена', updated(d), 'data')];
+    var s = d.my_shift;
+    if (!s) { out.push(h('div', { class: 'card' }, h('h2', { text: 'Активной смены нет' }), h('p', { class: 'muted', style: 'margin:4px 0 0', text: 'Смена назначается на сайте DataGraph.' }))); return out; }
+    var start = s.start ? new Date(s.start).getTime() : null, finish = s.finish ? new Date(s.finish).getTime() : null, now = Date.now();
+    var pct = start && finish && finish > start ? Math.max(0, Math.min(100, (now - start) / (finish - start) * 100)) : null;
+    out.push(h('div', { class: 'hero' },
+      h('div', { style: 'font-size:14px;opacity:.85', text: [s.title ? String(s.title).split(' · ')[0] : 'Смена', s.start ? fmt(s.start, { day: 'numeric', month: 'long' }) : ''].filter(Boolean).join(' · ') }),
+      h('div', { style: 'font-size:30px;font-weight:700;margin-top:4px', text: s.start && s.finish ? hm(s.start) + '–' + hm(s.finish) : '—' }),
+      pct != null ? h('div', { class: 'progress' }, h('span', { style: 'width:' + pct + '%' })) : null,
+      finish && finish > now ? h('div', { style: 'font-size:13px;opacity:.9;margin-top:6px', text: 'осталось ' + dur((finish - now) / 60000) }) : null));
+    var c = h('div', { class: 'card list' });
+    c.appendChild(h('div', { style: 'display:flex;justify-content:space-between;padding-top:10px' }, h('span', { style: 'font-weight:600', text: 'Мои станки' }), h('span', { class: 'muted small', text: String(s.equipment.length) })));
+    if (!s.equipment.length) c.appendChild(h('div', { class: 'empty', text: 'Станки не назначены. Добавить их можно в боте: «Моя смена» → «Добавить оборудование».' }));
+    s.equipment.forEach(function (x) { c.appendChild(eqRow(x, x.unit || '')); });
+    out.push(c);
+    return out;
   }
 
-  // ---------- состояние ----------
+  // ---------- отрисовка ----------
+  function render() {
+    if (!profile || profile.state !== 'authorized') return;
+    var box = $('screen'); box.textContent = '';
+    var key = needKey(), d = key ? cache[key] : null;
+    var nodes;
+    if (sub && sub.type === 'machine') nodes = d ? screenMachine(d) : [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'), loading()];
+    else if (tab === 'shifts') nodes = screenShifts(d);
+    else if (tab === 'rating') nodes = screenRating(d);
+    else if (tab === 'profile') nodes = screenProfile();
+    else if (tab === 'settings') nodes = screenSettings(cache.data);
+    else if (!d) nodes = [loading()];
+    else if (tab === 'equipment') nodes = screenEquipment(d);
+    else if (tab === 'myshift') nodes = screenMyShift(d);
+    else nodes = screenNow(d);
+    add(box, nodes);
+  }
+
+  // ---------- вход / выход ----------
   function applyProfile(resp, opts) {
     opts = opts || {};
     canRemember = !!resp.can_remember;
+    var was = profile && profile.state === 'authorized';
     profile = resp.profile || { state: 'not_authorized' };
     if (profile.state === 'authorized') {
-      var first = !$('tabsIn').children.length || opts.justLoggedIn;
-      renderProfile();
-      buildTabs();
       $('loginDone').hidden = !opts.justLoggedIn;
       $('loginDone').textContent = resp.notified ? 'Вход выполнен. В чате бота — кнопка «Открыть панель».' : 'Вход выполнен.';
       show('vApp');
-      if (first || !tab) setTab(tabsFor(profile.role)[0][0]);
-      loadData(true);
+      if (!was || opts.justLoggedIn || !tab) { cache = {}; loadedAt = {}; buildTabs(); setTab(tabs()[0][0]); }
+      startTimer();
     } else {
-      data = null; stopTimer(); loadedAt = 0;
-      $('who').textContent = '';
+      if (timer) clearInterval(timer); timer = null;
+      cache = {}; loadedAt = {}; tab = null; sub = null; backButton(false); ui.logoutConfirm = false;
       $('expiredNote').hidden = profile.state !== 'session_expired';
       if (profile.login_hint && !$('email').value) $('email').value = profile.login_hint;
       $('rememberRow').hidden = !canRemember;
       $('loginError').hidden = true;
       $('password').value = '';
-      clear($('tabsIn')); tab = null;
       show('vLogin');
     }
   }
-
-  function loadData(force) {
-    if (busy || !profile || profile.state !== 'authorized') return;
-    if (!force && Date.now() - loadedAt < 5000) return;
-    busy = true;
-    $('btnRefresh').disabled = true; $('btnRefresh').textContent = 'Обновляю…';
-    call('data').then(function (resp) {
-      if (resp.ok) {
-        data = resp; loadedAt = Date.now();
-        $('dataError').hidden = true;
-        renderData(); startTimer();
-        return;
-      }
-      if (resp.error === 'not_authorized' || resp.error === 'session_expired') {
-        if (resp.error === 'session_expired' && profile.remember) {
-          $('dataError').textContent = resp.message; $('dataError').hidden = false; return;
-        }
-        applyProfile(resp); return;
-      }
-      if (resp.error === 'bad_signature' || resp.error === 'init_expired') { showError('Откройте заново', resp.message); showDebug(resp.debug); return; }
-      $('dataError').textContent = resp.message || 'Не удалось загрузить данные.'; $('dataError').hidden = false;
-    }).catch(function (e) {
-      $('dataError').textContent = netError(e); $('dataError').hidden = false;
-    }).finally(function () {
-      busy = false; $('btnRefresh').disabled = false; $('btnRefresh').textContent = 'Обновить';
-    });
+  function logout() {
+    call('logout').then(function (resp) {
+      if (!resp.ok) { appError(resp.message || 'Не удалось выйти.'); return; }
+      $('remember').checked = false; applyProfile(resp);
+    }).catch(function (e) { appError(netError(e)); });
   }
-  function startTimer() {
-    stopTimer();
-    timer = setInterval(function () { if (document.visibilityState !== 'hidden' && tab !== 'profile') loadData(); }, REFRESH_MS);
-  }
-  function stopTimer() { if (timer) clearInterval(timer); timer = null; }
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && profile && profile.state === 'authorized' && Date.now() - loadedAt > 30000) loadData();
-  });
-
   function load() {
     if (!WA || !initData) {
       showError('Откройте из MAX', 'Эта страница работает внутри MAX: откройте чат бота DataGraph и нажмите «Открыть».');
-      $('btnRetry').hidden = true;
-      return;
+      $('btnRetry').hidden = true; return;
     }
     show('vLoading');
     call('me').then(function (resp) {
-      if (!resp.ok) { showError('Не получилось', resp.message || 'Ошибка сервера.'); showDebug(resp.debug); return; }
+      if (!resp.ok) { showError('Не получилось', resp.message || 'Ошибка сервера.', resp.debug); return; }
       applyProfile(resp);
     }).catch(function (e) { showError('Нет связи', netError(e)); });
   }
-
-  // ---------- вход ----------
   $('btnEye').addEventListener('click', function () {
     var pw = $('password'); var hide = pw.type === 'password';
     pw.type = hide ? 'text' : 'password';
@@ -649,8 +798,7 @@
   });
   $('loginForm').addEventListener('submit', function (ev) {
     ev.preventDefault();
-    var email = $('email').value.trim(), password = $('password').value;
-    var err = $('loginError');
+    var email = $('email').value.trim(), password = $('password').value, err = $('loginError');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Проверьте email.'; err.hidden = false; $('email').focus(); return; }
     if (!password) { err.textContent = 'Введите пароль.'; err.hidden = false; $('password').focus(); return; }
     err.hidden = true;
@@ -658,26 +806,12 @@
     call('login', { email: email, password: password, remember: canRemember && $('remember').checked ? '1' : '0' })
       .then(function (resp) {
         if (resp.ok) { $('password').value = ''; applyProfile(resp, { justLoggedIn: true }); return; }
-        if (resp.error === 'bad_signature' || resp.error === 'init_expired') { showError('Откройте заново', resp.message); showDebug(resp.debug); return; }
+        if (resp.error === 'bad_signature' || resp.error === 'init_expired') { showError('Откройте заново', resp.message, resp.debug); return; }
         err.textContent = resp.message || 'Не удалось войти.'; err.hidden = false;
         if (resp.error === 'bad_credentials') { $('password').value = ''; $('password').focus(); }
       })
       .catch(function (e) { err.textContent = netError(e); err.hidden = false; })
       .finally(function () { btn.disabled = false; btn.textContent = 'Войти'; });
-  });
-
-  // ---------- прочее ----------
-  $('eqSearch').addEventListener('input', function () { if (data) renderEquipment(); });
-  $('btnRefresh').addEventListener('click', function () { loadData(true); });
-  $('btnLogout').addEventListener('click', function () { this.hidden = true; $('logoutConfirm').hidden = false; });
-  $('btnLogoutNo').addEventListener('click', function () { $('logoutConfirm').hidden = true; $('btnLogout').hidden = false; });
-  $('btnLogoutYes').addEventListener('click', function () {
-    var btn = this; btn.disabled = true;
-    call('logout').then(function (resp) {
-      if (!resp.ok) { showError('Не получилось', resp.message || 'Ошибка сервера.'); return; }
-      $('remember').checked = false; applyProfile(resp);
-    }).catch(function (e) { showError('Нет связи', netError(e)); })
-      .finally(function () { btn.disabled = false; });
   });
   $('btnRetry').addEventListener('click', load);
   load();
