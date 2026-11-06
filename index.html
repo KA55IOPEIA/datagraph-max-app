@@ -251,7 +251,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.20</footer>
+  <footer>Мини-приложение DataGraph · v4.21</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -421,7 +421,7 @@
   function needKey() {
     if (sub && sub.type === 'machine') return 'machine:' + sub.id;
     if (sub && sub.type === 'notifs') return 'notifications';
-    if (sub && sub.type === 'pickEq') return 'eqopts';
+    if (sub && sub.type === 'pickEq') return sub.sid ? 'eqopts:' + sub.sid : 'eqopts';
     if (sub && sub.type === 'evFinish') return null;
     if (sub && sub.type === 'evTypes') return 'evtypes:' + sub.eq;
     if (tab === 'shifts') return 'shifts:' + ui.shiftsDay;
@@ -432,6 +432,7 @@
   function request(key) {
     if (key === 'data') return call('data');
     if (key === 'eqopts') return call('eq_options');
+    if (key.indexOf('eqopts:') === 0) return call('eq_options', { sid: key.slice(7) });
     if (key.indexOf('evtypes:') === 0) return call('ev_types', { eq: key.slice(8) });
     var p = key.split(':');
     if (p[0] === 'machine') return call('machine', { eq: p[1] });
@@ -464,11 +465,11 @@
   var noteTimer = null;
   function appNote(msg) { var e = $('appNote'); e.textContent = msg; e.hidden = false; clearTimeout(noteTimer); noteTimer = setTimeout(function () { e.hidden = true; }, 4000); }
   // «2 минуты», «1 час 5 минут»: для времени события, где важно читаться полностью
-  function plural(n, a, b, c) { var x = n % 100, y = n % 10; return n + ' ' + (x > 10 && x < 20 ? c : y === 1 ? a : y >= 2 && y <= 4 ? b : c); }
+  function countWord(n, a, b, c) { var x = n % 100, y = n % 10; return n + ' ' + (x > 10 && x < 20 ? c : y === 1 ? a : y >= 2 && y <= 4 ? b : c); }
   function durFull(min) {
     min = Math.max(0, Math.floor(min));
     var hh = Math.floor(min / 60), m = min % 60;
-    return hh ? plural(hh, 'час', 'часа', 'часов') + (m ? ' ' + plural(m, 'минута', 'минуты', 'минут') : '') : plural(m, 'минута', 'минуты', 'минут');
+    return hh ? countWord(hh, 'час', 'часа', 'часов') + (m ? ' ' + countWord(m, 'минута', 'минуты', 'минут') : '') : countWord(m, 'минута', 'минуты', 'минут');
   }
   function sinceLabel(iso) { var m = iso ? (Date.now() - new Date(iso).getTime()) / 60000 : null; return m == null ? '' : m < 1 ? 'только что' : 'идёт ' + durFull(m); }
   // время идущего события тикает само, без перезахода на экран
@@ -753,7 +754,7 @@
             h('span', { class: 'n', text: x.name }),
             k ? h('span', { class: 'small', style: 'color:var(--t);font-weight:600', text: KIND_SHORT[k].toLowerCase() + (x.minutes != null && k !== 'work' && k !== 'high' ? ' ' + dur(x.minutes) : '') }) : null));
         });
-        if (!s.equipment.length && s.status !== 'finished') c.appendChild(h('div', { class: 'muted small', style: 'margin-top:8px', text: 'Назначить станки пока можно в боте: Панель → «Назначить оборудование».' }));
+        if (s.status !== 'finished' && s.id) c.appendChild(h('button', { type: 'button', class: 'linkbtn', style: 'margin-top:6px', text: s.equipment.length ? 'Изменить станки' : 'Назначить станки', onclick: function () { openPickEq(s.id, s.full_name || s.user); } }));
         out.push(c);
       });
     });
@@ -979,7 +980,7 @@
     s.equipment.forEach(function (x) { c.appendChild(eqRow(x, x.unit || '', evByEq[x.id])); });
     out.push(c);
     if (s.status === 'running') {
-      out.push(h('button', { type: 'button', class: 'btn primary', text: s.equipment.length ? 'Изменить станки' : 'Выбрать станки', onclick: openPickEq }));
+      out.push(h('button', { type: 'button', class: 'btn primary', text: s.equipment.length ? 'Изменить станки' : 'Выбрать станки', onclick: function () { openPickEq(); } }));
     }
     return out;
   }
@@ -1034,25 +1035,30 @@
   }
 
   // ===== сотрудник: выбор станков своей смены =====
-  function openPickEq() { ui.eqPick = null; ui.eqPickQ = ''; cache.eqopts = null; loadedAt.eqopts = 0; openSub({ type: 'pickEq' }); }
+  function openPickEq(sid, who) {
+    var key = sid ? 'eqopts:' + sid : 'eqopts';
+    ui.eqPick = null; ui.eqPickQ = ''; cache[key] = null; loadedAt[key] = 0; openSub({ type: 'pickEq', sid: sid || null, who: who || null });
+  }
   function saveEq() {
     var ids = Object.keys(ui.eqPick || {}).filter(function (k) { return ui.eqPick[k]; });
     if (!ids.length || ui.eqSaving) return;
     ui.eqSaving = true; render();
-    call('eq_save', { ids: ids.join(',') }).then(function (resp) {
+    var sid = sub && sub.sid, key = sid ? 'eqopts:' + sid : 'eqopts';
+    call('eq_save', sid ? { ids: ids.join(','), sid: sid } : { ids: ids.join(',') }).then(function (resp) {
       if (!resp.ok) throw new Error(resp.message || 'Не удалось сохранить.');
-      ui.eqPick = null; cache.eqopts = null; loadedAt.eqopts = 0; loadedAt.data = 0;
+      ui.eqPick = null; cache[key] = null; loadedAt[key] = 0; loadedAt.data = 0;
+      Object.keys(loadedAt).forEach(function (k) { if (k.indexOf('shifts:') === 0) loadedAt[k] = 0; });
       appNote('Станки сохранены');
       closeSub();
-    }).catch(function (e) { appError(e && e.message ? e.message : 'Не удалось сохранить.'); loadedAt.eqopts = 0; })
+    }).catch(function (e) { appError(e && e.message ? e.message : 'Не удалось сохранить.'); loadedAt[key] = 0; })
       .finally(function () { ui.eqSaving = false; render(); });
   }
   function screenPickEq(d) {
-    var out = [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'), h('h1', { style: 'margin:6px 0 4px', text: 'Мои станки' })];
+    var out = [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'), h('h1', { style: 'margin:6px 0 4px', text: sub.who ? 'Станки смены' : 'Мои станки' })];
     if (!d) { out.push(loading()); return out; }
     if (!d.shift) { out.push(h('div', { class: 'card' }, h('p', { class: 'muted', style: 'margin:0', text: 'Активной смены нет.' }))); return out; }
     if (!ui.eqPick) { ui.eqPick = {}; d.selectable.forEach(function (x) { if (x.selected) ui.eqPick[x.id] = true; }); }
-    out.push(h('div', { class: 'muted small', style: 'margin-bottom:10px', text: d.shift.title || 'Текущая смена' }));
+    out.push(h('div', { class: 'muted small', style: 'margin-bottom:10px', text: [sub.who, d.shift.title || 'Текущая смена'].filter(Boolean).join(' · ') }));
     var search = h('input', { type: 'search', class: 'search', placeholder: 'Поиск станка', 'aria-label': 'Поиск станка' });
     search.value = ui.eqPickQ || '';
     var listEl = h('div', { class: 'card' });
