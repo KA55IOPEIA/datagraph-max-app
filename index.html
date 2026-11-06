@@ -77,6 +77,10 @@
   @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
   .side .amp { display: block; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .spark { height: 56px; margin-top: 8px; } .spark svg { display: block; width: 100%; height: 100%; }
+  .ev-chip { display: inline-block; margin-top: 6px; padding: 4px 10px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 600; }
+  .row .main .ev-chip span { display: inline; color: inherit; font-size: inherit; white-space: normal; }
+  .ev-row { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--field); margin-top: 8px; }
+  .ev-row:first-child { margin-top: 0; }
   .note { border-radius: 14px; padding: 12px 14px; font-size: 14px; margin: 0 0 12px; }
   .note.ok { background: var(--ok-bg); color: var(--ok); }
   .note.warn { background: var(--warn-bg); color: var(--warn); }
@@ -247,7 +251,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.17</footer>
+  <footer>Мини-приложение DataGraph · v4.18</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -520,11 +524,12 @@
     if (live.connected) return h('span', null, h('span', { class: 'live-dot', 'aria-hidden': 'true' }), 'В реальном времени' + (d && d.partial ? ' · часть данных не загрузилась' : ''));
     return d && d.generated_at ? 'Обновлено в ' + hm(d.generated_at) + (d.partial ? ' · часть данных не загрузилась' : '') : '';
   }
-  function eqRow(x, subText) {
+  function eqRow(x, subText, ev) {
     var k = x.kind || 'off';
     return h('button', { type: 'button', class: 'row k-' + k, onclick: function () { openMachine(x.id); } },
       h('span', { class: 'dot' }),
-      h('div', { class: 'main' }, h('b', { text: x.name }), (subText != null ? subText : [x.workshop || x.unit, x.operator].filter(Boolean).join(' · ')) ? h('span', { text: subText != null ? subText : [x.workshop || x.unit, x.operator].filter(Boolean).join(' · ') }) : null),
+      h('div', { class: 'main' }, h('b', { text: x.name }), (subText != null ? subText : [x.workshop || x.unit, x.operator].filter(Boolean).join(' · ')) ? h('span', { text: subText != null ? subText : [x.workshop || x.unit, x.operator].filter(Boolean).join(' · ') }) : null,
+        ev ? h('div', { class: 'ev-chip' }, h('span', { text: ev.event_name + ' · ' }), sinceEl(ev.since)) : null),
       h('div', { class: 'side' }, h('span', { class: 'pill', text: KIND_SHORT[k] }),
         x.minutes != null ? h('span', { class: 't', title: sinceText(x.since), text: dur(x.minutes) }) : null,
         live.connected ? h('span', { class: 'amp', 'data-amp': x.id, text: ampText(x.id) }) : null));
@@ -964,9 +969,7 @@
     if (!s.equipment.length) c.appendChild(h('div', { class: 'empty', text: 'Станки не назначены. Выберите их кнопкой ниже.' }));
     var evByEq = {};
     (d.my_events || []).forEach(function (e) { evByEq[e.equipment_id] = e; });
-    var mineEv = (d.my_events || []).map(function (e) { var q = s.equipment.filter(function (x) { return x.id === e.equipment_id; })[0]; return Object.assign({}, e, { equipment_name: q ? q.name : 'Станок' }); });
-    if (mineEv.length) out.push(eventsCard(mineEv.length > 1 ? 'Идут события' : 'Идёт событие', mineEv));
-    s.equipment.forEach(function (x) { var e = evByEq[x.id]; c.appendChild(eqRow(x, e ? e.event_name : (x.unit || ''))); });
+    s.equipment.forEach(function (x) { c.appendChild(eqRow(x, x.unit || '', evByEq[x.id])); });
     out.push(c);
     if (s.status === 'running') {
       out.push(h('button', { type: 'button', class: 'btn primary', text: s.equipment.length ? 'Изменить станки' : 'Выбрать станки', onclick: openPickEq }));
@@ -1014,7 +1017,7 @@
     var c = h('div', { class: 'card' });
     d.events.forEach(function (x) {
       // запуск только значком справа: нажатие на название ничего не делает, чтобы не запустить случайно
-      c.appendChild(h('div', { style: 'display:flex;align-items:center;gap:12px;padding:8px 0' }, h('div', { style: 'flex:1;min-width:0;font-weight:600', text: x.name }),
+      c.appendChild(h('div', { class: 'ev-row' }, h('div', { style: 'flex:1;min-width:0;font-weight:600', text: x.name }),
         h('button', { type: 'button', class: 'icon-btn', style: 'background:var(--accent);color:var(--accent-text)', 'aria-label': 'Запустить: ' + x.name, disabled: ui.evBusy ? 'disabled' : null, onclick: function () {
           evAction('ev_start', { eq: d.equipment.id, ev: x.id, comment: ui.evComment || '' }, function () { appNote('Событие запущено'); closeSub(); });
         } }, icon('work'))));
