@@ -246,7 +246,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.12</footer>
+  <footer>Мини-приложение DataGraph · v4.13</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -1190,7 +1190,12 @@
   }
   function drawCurrent(id) {
     var cur = $('liveCur'), box = $('liveSpark');
-    if (!cur || !box) { if (live.connected && live.metrics[id] != null && !$('liveCur')) softRender(); return; }
+    if (!cur || !box) {
+      // блока тока ещё нет: перерисовываем, только когда данные карточки уже есть и один раз,
+      // иначе render и drawCurrent вызывают друг друга бесконечно и экран остаётся пустым
+      if (live.connected && live.metrics[id] != null && cache['machine:' + id] && !live.redrawing) { live.redrawing = true; try { softRender(); } finally { live.redrawing = false; } }
+      return;
+    }
     cur.textContent = amps(live.metrics[id]);
     var hs = live.hist[id] || [];
     if (hs.length < 3) { box.innerHTML = ''; return; }
