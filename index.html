@@ -246,7 +246,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.7</footer>
+  <footer>Мини-приложение DataGraph · v4.8</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -749,6 +749,7 @@
     call('notif_read', nid ? { nid: nid } : {}).then(function (resp) {
       if (!resp.ok) throw new Error(resp.message);
       if (resp.site_failed) appError('Уведомления DataGraph отметить не удалось — попробуйте позже.');
+      if (resp.site_more) { appError('Отмечено 100 уведомлений. Нажмите «Прочитать все» ещё раз, чтобы отметить остальные.'); loadedAt.notifications = 0; }
     }).catch(function (e) { appError(e && e.message ? e.message : 'Не удалось отметить прочитанным.'); loadedAt.notifications = 0; })
       .finally(function () { loadedAt.data = 0; render(); });
   }
@@ -789,6 +790,30 @@
   // ===== настройки (админ) и профиль =====
   var NOTIF_META = [['idle', 'Простой'], ['off', 'Нет связи'], ['down', 'Выключен на смене'], ['high', 'Высокая нагрузка']];
   var MINS = [15, 30, 60, 120, 180], DELS = [1, 5, 10, 30, 60];
+  // вид уведомления сайта; HIGH_LOAD может стоять в любом из двух полей
+  function siteKindOf(n) { var a = String((n && n.event_name) || '').toUpperCase(), b = String((n && n.event_type) || '').toUpperCase(); return a === 'HIGH_LOAD' || b === 'HIGH_LOAD' ? 'HIGH_LOAD' : a; }
+  function saveHidden(id, hide) {
+    var d = cache.data; if (!d) return;
+    var prev = (d.notif_hidden || []).slice();
+    d.notif_hidden = prev.filter(function (x) { return x !== id; }).concat(hide ? [id] : []); render();
+    call('notif_hide', { cat: id, hide: hide ? '1' : '0' }).then(function (resp) {
+      if (!resp.ok) throw new Error(resp.message || 'Не удалось сохранить.');
+      d.notif_hidden = resp.notif_hidden || d.notif_hidden;
+      cache.notifications = null; loadedAt.notifications = 0; loadedAt.data = 0;
+    }).catch(function (e) { d.notif_hidden = prev; appError(e && e.message ? e.message : 'Не удалось сохранить.'); })
+      .finally(render);
+  }
+  function siteKindsCard(d) {
+    var hid = d.notif_hidden || [];
+    var c = h('div', { class: 'card' }, h('div', { style: 'font-weight:600;font-size:16px', text: 'Уведомления сайта' }),
+      h('div', { class: 'muted small', style: 'margin-bottom:6px', text: 'Что показывать в колокольчике приложения. На сайте и в боте ничего не меняется.' }));
+    d.site_kinds.forEach(function (k) {
+      var shown = hid.indexOf(k.id) < 0;
+      c.appendChild(h('div', { style: 'display:flex;align-items:center;gap:12px;padding:8px 0' }, h('div', { style: 'flex:1', text: k.label }),
+        h('button', { type: 'button', class: 'sw', role: 'switch', 'aria-checked': shown ? 'true' : 'false', 'aria-label': 'Показывать: ' + k.label, onclick: function () { saveHidden(k.id, shown); } })));
+    });
+    return c;
+  }
   function saveNotif(kind, field, value, el) {
     var d = cache.data; if (!d || !d.notif) return;
     var prev = Object.assign({}, d.notif[kind]);
@@ -841,6 +866,7 @@
       }
       out.push(c);
     });
+    if (d && d.site_kinds) out.push(siteKindsCard(d));
     out.push(accountCard());
     out.push(techDetails());
     return out;
@@ -962,6 +988,9 @@
       var fresh = arr.filter(function (n) { return n && n.id && !live.seen[n.id] && n.is_read !== true; });
       if (!fresh.length) return;
       fresh.forEach(function (n) { live.seen[n.id] = true; });
+      var hid = (cache.data && cache.data.notif_hidden) || [];
+      fresh = fresh.filter(function (n) { return hid.indexOf(siteKindOf(n)) < 0; });
+      if (!fresh.length) return;
       if (cache.data) cache.data.notif_unread = (cache.data.notif_unread || 0) + fresh.length;
       loadedAt.notifications = 0;
       toast(fresh[fresh.length - 1], fresh.length);
