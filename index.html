@@ -247,7 +247,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.16</footer>
+  <footer>Мини-приложение DataGraph · v4.17</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -418,7 +418,6 @@
     if (sub && sub.type === 'machine') return 'machine:' + sub.id;
     if (sub && sub.type === 'notifs') return 'notifications';
     if (sub && sub.type === 'pickEq') return 'eqopts';
-    if (sub && sub.type === 'events') return 'evs';
     if (sub && sub.type === 'evFinish') return null;
     if (sub && sub.type === 'evTypes') return 'evtypes:' + sub.eq;
     if (tab === 'shifts') return 'shifts:' + ui.shiftsDay;
@@ -429,7 +428,6 @@
   function request(key) {
     if (key === 'data') return call('data');
     if (key === 'eqopts') return call('eq_options');
-    if (key === 'evs') return call('ev_state');
     if (key.indexOf('evtypes:') === 0) return call('ev_types', { eq: key.slice(8) });
     var p = key.split(':');
     if (p[0] === 'machine') return call('machine', { eq: p[1] });
@@ -461,7 +459,27 @@
   function appError(msg) { $('appError').textContent = msg; $('appError').hidden = false; }
   var noteTimer = null;
   function appNote(msg) { var e = $('appNote'); e.textContent = msg; e.hidden = false; clearTimeout(noteTimer); noteTimer = setTimeout(function () { e.hidden = true; }, 4000); }
-  function sinceLabel(iso) { var m = iso ? (Date.now() - new Date(iso).getTime()) / 60000 : null; return m == null ? '' : m < 1 ? 'только что' : 'идёт ' + dur(m); }
+  // «2 минуты», «1 час 5 минут»: для времени события, где важно читаться полностью
+  function plural(n, a, b, c) { var x = n % 100, y = n % 10; return n + ' ' + (x > 10 && x < 20 ? c : y === 1 ? a : y >= 2 && y <= 4 ? b : c); }
+  function durFull(min) {
+    min = Math.max(0, Math.floor(min));
+    var hh = Math.floor(min / 60), m = min % 60;
+    return hh ? plural(hh, 'час', 'часа', 'часов') + (m ? ' ' + plural(m, 'минута', 'минуты', 'минут') : '') : plural(m, 'минута', 'минуты', 'минут');
+  }
+  function sinceLabel(iso) { var m = iso ? (Date.now() - new Date(iso).getTime()) / 60000 : null; return m == null ? '' : m < 1 ? 'только что' : 'идёт ' + durFull(m); }
+  // время идущего события тикает само, без перезахода на экран
+  function sinceEl(iso) { return h('span', { 'data-since': iso || '', text: sinceLabel(iso) }); }
+  setInterval(function () { Array.prototype.forEach.call(document.querySelectorAll('[data-since]'), function (e) { var t = sinceLabel(e.getAttribute('data-since')); if (e.textContent !== t) e.textContent = t; }); }, 15000);
+  function eventsCard(title, items) {
+    var c = h('div', { class: 'card' }, h('p', { class: 'card-title', text: title }));
+    items.forEach(function (e) {
+      c.appendChild(h('button', { type: 'button', class: 'row', style: 'width:100%', onclick: function () { openMachine(e.equipment_id); } },
+        h('span', { class: 'dot', style: 'background:var(--accent)' }),
+        h('div', { class: 'main' }, h('b', { text: e.event_name }), h('span', { text: [e.equipment_name, e.operator].filter(Boolean).join(' · ') })),
+        h('div', { class: 'side' }, h('span', { class: 't' }, sinceEl(e.since)))));
+    });
+    return c;
+  }
   function startTimer() {
     if (timer) clearInterval(timer);
     timer = setInterval(function () {
@@ -545,6 +563,7 @@
         h('b', { text: String(t[2]) }), h('span', null, h('span', { class: 'dot' }), t[1])));
     });
     out.push(tiles);
+    if (d.events_now && d.events_now.length) out.push(eventsCard('Идут события', d.events_now));
     var att = d.attention || [], th = d.thresholds || {};
     var ac = h('div', { class: 'card' },
       h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:8px' }, h('p', { class: 'card-title', text: 'Обратите внимание' }), att.length ? h('span', { class: 'pill k-idle', text: String(att.length) }) : null),
@@ -619,18 +638,19 @@
       h('div', { class: 'ico' }, icon(k)),
       h('div', { style: 'flex:1' }, h('span', { class: 'pill', text: KIND[k] }),
         h('div', { style: 'font-size:22px;font-weight:700;margin-top:4px', text: m.minutes != null ? dur(m.minutes) : '—' }),
-        h('div', { class: 'muted small', text: [sinceText(m.since), isAdmin() && (k === 'idle' || k === 'off' || k === 'down') && m.threshold ? 'порог уведомления ' + minLabel(m.threshold) : ''].filter(Boolean).join(' · ') }))));
+        h('div', { class: 'muted small', text: [sinceText(m.since), isAdmin() && (k === 'idle' || k === 'off' || k === 'down') && m.threshold ? 'порог уведомления ' + minLabel(m.threshold) : ''].filter(Boolean).join(' · ') })),
+      live.connected && live.metrics[m.id] != null ? h('div', { style: 'text-align:right;flex:none' },
+        h('div', { id: 'liveCur', style: 'font-size:22px;font-weight:700;font-variant-numeric:tabular-nums', text: amps(live.metrics[m.id]) }),
+        h('div', { class: 'muted small', text: 'ток' })) : null));
     if (d.ctl) {
       var act = d.ctl.active;
       out.push(h('div', { class: 'card' }, act ? h('div', { style: 'font-weight:600', text: act.event_name }) : null,
-        act ? h('div', { class: 'muted small', text: sinceLabel(act.since) }) : null,
+        act ? h('div', { class: 'muted small' }, sinceEl(act.since)) : null,
         h('button', { type: 'button', class: act ? 'btn danger' : 'btn primary', style: act ? null : 'margin-top:0', disabled: ui.evBusy ? 'disabled' : null, text: ui.evBusy ? 'Подождите…' : act ? 'Завершить событие' : 'Запустить событие', onclick: function () {
           ui.evComment = '';
           openSub(act ? { type: 'evFinish', tsid: act.id, name: act.event_name, eqName: m.name } : { type: 'evTypes', eq: m.id });
         } })));
     }
-    var cur = liveCurrentCard(m.id);
-    if (cur) out.push(cur);
     var shiftBox = h('div', { class: 'kv' });
     if (m.shift) add(shiftBox, [h('span', { class: 'muted', text: 'Оператор' }), h('span', { text: m.shift.user || '—' }), h('span', { class: 'muted', text: 'Смена' }), h('span', { text: m.shift.title || (m.shift.start && m.shift.finish ? hm(m.shift.start) + '–' + hm(m.shift.finish) : '—') })]);
     if (!d.ctl) out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Смена' }), m.shift ? shiftBox : h('div', { class: 'muted small', text: 'Сейчас станок ни за кем не закреплён.' })));
@@ -944,53 +964,29 @@
     if (!s.equipment.length) c.appendChild(h('div', { class: 'empty', text: 'Станки не назначены. Выберите их кнопкой ниже.' }));
     var evByEq = {};
     (d.my_events || []).forEach(function (e) { evByEq[e.equipment_id] = e; });
-    s.equipment.forEach(function (x) { var e = evByEq[x.id]; c.appendChild(eqRow(x, e ? e.event_name + ' · ' + sinceLabel(e.since) : (x.unit || ''))); });
+    var mineEv = (d.my_events || []).map(function (e) { var q = s.equipment.filter(function (x) { return x.id === e.equipment_id; })[0]; return Object.assign({}, e, { equipment_name: q ? q.name : 'Станок' }); });
+    if (mineEv.length) out.push(eventsCard(mineEv.length > 1 ? 'Идут события' : 'Идёт событие', mineEv));
+    s.equipment.forEach(function (x) { var e = evByEq[x.id]; c.appendChild(eqRow(x, e ? e.event_name : (x.unit || ''))); });
     out.push(c);
     if (s.status === 'running') {
-      if (s.equipment.length) {
-        out.push(h('button', { type: 'button', class: 'btn primary', text: 'События', onclick: openEvents }));
-        out.push(h('div', { style: 'text-align:center;margin-top:6px' }, h('button', { type: 'button', class: 'linkbtn', text: 'Изменить станки', onclick: openPickEq })));
-      } else out.push(h('button', { type: 'button', class: 'btn primary', text: 'Выбрать станки', onclick: openPickEq }));
+      out.push(h('button', { type: 'button', class: 'btn primary', text: s.equipment.length ? 'Изменить станки' : 'Выбрать станки', onclick: openPickEq }));
     }
     return out;
   }
 
   // ===== сотрудник: события на станках своей смены =====
-  function openEvents() { cache.evs = null; loadedAt.evs = 0; openSub({ type: 'events' }); }
   function evAction(action, extra, done) {
     if (ui.evBusy) return;
     ui.evBusy = true; render();
     call(action, extra).then(function (resp) {
       if (!resp.ok) throw new Error(resp.message || 'Не получилось.');
-      cache.evs = null; loadedAt.evs = 0; loadedAt.data = 0;
+      loadedAt.data = 0;
       Object.keys(loadedAt).forEach(function (k) { if (k.indexOf('machine:') === 0) loadedAt[k] = 0; });
       ui.evComment = '';
       done();
       if (resp.comment_failed) appError('Комментарий сохранить не удалось.');
-    }).catch(function (e) { appError(e && e.message ? e.message : 'Не получилось.'); loadedAt.evs = 0; })
+    }).catch(function (e) { appError(e && e.message ? e.message : 'Не получилось.'); })
       .finally(function () { ui.evBusy = false; render(); ensure(true); });
-  }
-  function screenEvents(d) {
-    var out = [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'), h('h1', { style: 'margin:6px 0 10px', text: 'События' })];
-    if (!d) { out.push(loading()); return out; }
-    if (!d.shift) { out.push(h('div', { class: 'card' }, h('p', { class: 'muted', style: 'margin:0', text: 'Активной смены нет.' }))); return out; }
-    if (d.active.length) {
-      var a = h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Идут сейчас' }));
-      d.active.forEach(function (x) {
-        a.appendChild(h('div', { style: 'padding:10px 0' }, h('div', { style: 'font-weight:600', text: x.equipment_name }),
-          h('div', { class: 'muted small', text: x.event_name + ' · ' + sinceLabel(x.since) }),
-          h('button', { type: 'button', class: 'btn danger', text: ui.evBusy ? 'Подождите…' : 'Завершить событие', disabled: ui.evBusy ? 'disabled' : null, onclick: function () { ui.evComment = ''; openSub({ type: 'evFinish', tsid: x.id, name: x.event_name, eqName: x.equipment_name }); } })));
-      });
-      out.push(a);
-    }
-    if (d.free.length) {
-      var c = h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Запустить событие на станке' }));
-      d.free.forEach(function (x) {
-        c.appendChild(h('button', { type: 'button', class: 'btn', text: x.name, onclick: function () { ui.evComment = ''; openSub({ type: 'evTypes', eq: x.id }); } }));
-      });
-      out.push(c);
-    } else if (!d.active.length) out.push(h('div', { class: 'card' }, h('p', { class: 'muted', style: 'margin:0', text: 'В смене нет станков.' })));
-    return out;
   }
   // поле с классом search: живое обновление не перерисует экран, пока человек печатает
   function commentField() {
@@ -1017,9 +1013,11 @@
     out.push(commentField());
     var c = h('div', { class: 'card' });
     d.events.forEach(function (x) {
-      c.appendChild(h('button', { type: 'button', class: 'btn', text: ui.evBusy ? 'Подождите…' : x.name, disabled: ui.evBusy ? 'disabled' : null, onclick: function () {
-        evAction('ev_start', { eq: d.equipment.id, ev: x.id, comment: ui.evComment || '' }, function () { appNote('Событие запущено'); closeSub(); });
-      } }));
+      // запуск только значком справа: нажатие на название ничего не делает, чтобы не запустить случайно
+      c.appendChild(h('div', { style: 'display:flex;align-items:center;gap:12px;padding:8px 0' }, h('div', { style: 'flex:1;min-width:0;font-weight:600', text: x.name }),
+        h('button', { type: 'button', class: 'icon-btn', style: 'background:var(--accent);color:var(--accent-text)', 'aria-label': 'Запустить: ' + x.name, disabled: ui.evBusy ? 'disabled' : null, onclick: function () {
+          evAction('ev_start', { eq: d.equipment.id, ev: x.id, comment: ui.evComment || '' }, function () { appNote('Событие запущено'); closeSub(); });
+        } }, icon('work'))));
     });
     out.push(c);
     return out;
@@ -1237,32 +1235,15 @@
     }, wait);
   }
   function amps(v) { return (Math.round(v * 10) / 10).toFixed(1).replace('.', ',') + ' А'; }
-  function liveCurrentCard(id) {
-    if (!live.connected || live.metrics[id] == null) return null;
-    return h('div', { class: 'card' },
-      h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:8px' }, h('p', { class: 'card-title', text: 'Ток сейчас' }), h('span', { class: 'muted small' }, h('span', { class: 'live-dot', 'aria-hidden': 'true' }), 'с датчика')),
-      h('div', { id: 'liveCur', style: 'font-size:26px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums', text: amps(live.metrics[id]) }),
-      h('div', { id: 'liveSpark', class: 'spark', role: 'img', 'aria-label': 'Ток за последние минуты' }),
-      h('div', { class: 'muted small', text: 'последние 3 минуты' }));
-  }
   function drawCurrent(id) {
-    var cur = $('liveCur'), box = $('liveSpark');
-    if (!cur || !box) {
+    var cur = $('liveCur');
+    if (!cur) {
       // блока тока ещё нет: перерисовываем, только когда данные карточки уже есть и один раз,
       // иначе render и drawCurrent вызывают друг друга бесконечно и экран остаётся пустым
       if (live.connected && live.metrics[id] != null && cache['machine:' + id] && !live.redrawing) { live.redrawing = true; try { softRender(); } finally { live.redrawing = false; } }
       return;
     }
-    cur.textContent = amps(live.metrics[id]);
-    var hs = live.hist[id] || [];
-    if (hs.length < 3) { box.innerHTML = ''; return; }
-    var W = 300, H = 56, t1 = hs[hs.length - 1][0], t0 = hs[0][0];
-    if (t1 <= t0) return;
-    var max = Math.max.apply(null, hs.map(function (p) { return p[1]; })) * 1.1 || 1;
-    var pts = hs.map(function (p) { return ((p[0] - t0) / (t1 - t0) * W).toFixed(1) + ',' + (H - 2 - p[1] / max * (H - 4)).toFixed(1); });
-    box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
-      '<polygon points="0,' + H + ' ' + pts.join(' ') + ' ' + pts[pts.length - 1].split(',')[0] + ',' + H + '" fill="var(--accent-soft)"/>' +
-      '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>';
+    if (live.metrics[id] != null) cur.textContent = amps(live.metrics[id]);
   }
   var toastT = null;
   function toast(n, count) {
@@ -1284,7 +1265,6 @@
     if (sub && sub.type === 'machine') nodes = d ? screenMachine(d) : [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'), loading()];
     else if (sub && sub.type === 'notifs') nodes = screenNotifs(d);
     else if (sub && sub.type === 'pickEq') nodes = screenPickEq(d);
-    else if (sub && sub.type === 'events') nodes = screenEvents(d);
     else if (sub && sub.type === 'evTypes') nodes = screenEvTypes(d);
     else if (sub && sub.type === 'evFinish') nodes = screenEvFinish();
     else if (tab === 'shifts') nodes = screenShifts(d);
