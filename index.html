@@ -251,7 +251,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.21</footer>
+  <footer>Мини-приложение DataGraph · v4.22</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -549,6 +549,13 @@
   function legendRow(kind, label, value) { return [h('span', { class: 'l k-' + kind }, h('span', { class: 'dot' }), label), h('span', { class: 'v', text: value })]; }
 
   // ===== администратор: «Сейчас» =====
+  function attCollapsed(set) {
+    try {
+      if (set !== undefined) { ui.attClosed = set; localStorage.setItem('dg_att_closed', set ? '1' : '0'); return set; }
+      if (ui.attClosed === undefined) ui.attClosed = localStorage.getItem('dg_att_closed') === '1';
+    } catch (e) { if (set !== undefined) ui.attClosed = set; }
+    return !!ui.attClosed;
+  }
   function screenNow(d) {
     var s = d.summary || {}, out = [];
     out.push(header('Сейчас', updated(d), 'data', true));
@@ -571,12 +578,16 @@
     out.push(tiles);
     if (d.events_now && d.events_now.length) out.push(eventsCard('Идут события', d.events_now));
     var att = d.attention || [], th = d.thresholds || {};
+    // свёрнутый список запоминается на устройстве; число остаётся видно и в свёрнутом виде
+    var attClosed = attCollapsed();
+    var chev = icon('chevron'); chev.setAttribute('style', 'width:18px;height:18px;flex:none;transition:transform .15s;transform:rotate(' + (attClosed ? 90 : -90) + 'deg)');
     var ac = h('div', { class: 'card' },
-      h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:8px' }, h('p', { class: 'card-title', text: 'Обратите внимание' }), att.length ? h('span', { class: 'pill k-idle', text: String(att.length) }) : null),
-      h('div', { class: 'muted small', text: 'Дольше вашего порога: простой ' + minLabel(th.idle || 20) + ', нет связи ' + minLabel(th.off || 30) + ', выключен на смене ' + minLabel(th.down || 60) }));
-    if (!att.length) ac.appendChild(h('div', { class: 'empty', text: 'Всё в порядке — дольше порога никто не стоит.' }));
-    att.slice(0, 8).forEach(function (x) { ac.appendChild(eqRow(x)); });
-    if (att.length > 8) ac.appendChild(h('button', { type: 'button', class: 'btn', text: 'Показать все (' + att.length + ')', onclick: function () { ui.eqFilter = 'all'; setTab('equipment'); } }));
+      h('button', { type: 'button', 'aria-expanded': attClosed ? 'false' : 'true', style: 'display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;padding:0;cursor:pointer;text-align:left', onclick: function () { attCollapsed(!attClosed); render(); } },
+        h('p', { class: 'card-title', style: 'flex:1;margin:0', text: 'Обратите внимание' }), att.length ? h('span', { class: 'pill k-idle', text: String(att.length) }) : null, chev),
+      attClosed ? null : h('div', { class: 'muted small', text: 'Дольше вашего порога: простой ' + minLabel(th.idle || 20) + ', нет связи ' + minLabel(th.off || 30) + ', выключен на смене ' + minLabel(th.down || 60) }));
+    if (!attClosed && !att.length) ac.appendChild(h('div', { class: 'empty', text: 'Всё в порядке — дольше порога никто не стоит.' }));
+    if (!attClosed) att.slice(0, 8).forEach(function (x) { ac.appendChild(eqRow(x)); });
+    if (!attClosed && att.length > 8) ac.appendChild(h('button', { type: 'button', class: 'btn', text: 'Показать все (' + att.length + ')', onclick: function () { ui.eqFilter = 'all'; setTab('equipment'); } }));
     out.push(ac);
     var t = d.today || {};
     var sum = (t.work || 0) + (t.high || 0) + (t.nowork || 0) + (t.off || 0);
