@@ -251,7 +251,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.19</footer>
+  <footer>Мини-приложение DataGraph · v4.20</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -674,7 +674,7 @@
     var tt = (sl && sl.total) || d.today_total || {};
     var hh2 = function (x) { return String(x.h).padStart(2, '0'); };
     var axisEl = sl
-      ? h('div', { class: 'axis' }, h('span', { text: hh2(sl.hours[0]) + ':00' }), h('span', { text: hh2(sl.hours[sl.hours.length - 1]) + ':00' }))
+      ? h('div', { class: 'axis' }, h('span', { text: hh2(sl.hours[0]) + ':00' }), h('span', { text: hh2({ h: (sl.hours[sl.hours.length - 1].h + 1) % 24 }) + ':00' }))
       : h('div', { class: 'axis' }, h('span', { text: '00' }), h('span', { text: '06' }), h('span', { text: '12' }), h('span', { text: '18' }), h('span', { text: '24' }));
     out.push(h('div', { class: 'card' },
       h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('p', { class: 'card-title', text: sl ? 'Загрузка за смену' : 'Загрузка за сегодня' }), h('span', { class: 'muted small', text: 'по часам' })),
