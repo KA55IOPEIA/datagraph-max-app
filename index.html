@@ -246,7 +246,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.9</footer>
+  <footer>Мини-приложение DataGraph · v4.10</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -827,7 +827,7 @@
   function chatKindsCard(d) {
     var on = d.notif_chat || [];
     var c = h('div', { class: 'card' }, h('div', { style: 'font-weight:600;font-size:16px', text: 'Присылать в чат бота' }),
-      h('div', { class: 'muted small', style: 'margin-bottom:6px', text: 'Придёт сообщением и пушем на телефон, если адресовано вам. Отчёты приходят файлом, высокая нагрузка настраивается выше.' }));
+      h('div', { class: 'muted small', style: 'margin-bottom:6px', text: d.site_kinds ? 'Придёт сообщением и пушем на телефон, если адресовано вам. Отчёты приходят файлом, высокая нагрузка настраивается выше.' : 'Придёт сообщением и пушем на телефон, если адресовано вам.' }));
     d.chat_kinds.forEach(function (k) {
       var enabled = on.indexOf(k.id) >= 0;
       c.appendChild(h('div', { style: 'display:flex;align-items:center;gap:12px;padding:8px 0' }, h('div', { style: 'flex:1', text: k.label }),
@@ -900,7 +900,12 @@
     out.push(techDetails());
     return out;
   }
-  function screenProfile() { return [h('h1', { style: 'margin-bottom:14px', text: 'Профиль' }), accountCard(), techDetails()]; }
+  function screenProfile() {
+    var d = cache.data, out = [h('h1', { style: 'margin-bottom:14px', text: 'Профиль' })];
+    if (d && d.chat_kinds) out.push(chatKindsCard(d));
+    out.push(accountCard()); out.push(techDetails());
+    return out;
+  }
 
   // ===== сотрудник: «Смена» =====
   function screenMyShift(d) {
