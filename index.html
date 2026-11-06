@@ -242,12 +242,11 @@
   </section>
 
   <div id="vApp" hidden>
-    <div class="note ok" id="loginDone" hidden></div>
     <div class="note err" id="appError" hidden></div>
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.6</footer>
+  <footer>Мини-приложение DataGraph · v4.7</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -1071,8 +1070,6 @@
     var was = profile && profile.state === 'authorized';
     profile = resp.profile || { state: 'not_authorized' };
     if (profile.state === 'authorized') {
-      $('loginDone').hidden = !opts.justLoggedIn;
-      $('loginDone').textContent = resp.notified ? 'Вход выполнен. В чате бота — кнопка «Открыть панель».' : 'Вход выполнен.';
       show('vApp');
       if (!was || opts.justLoggedIn || !tab) { cache = {}; loadedAt = {}; buildTabs(); setTab(tabs()[0][0]); }
       startTimer(); liveStart();
