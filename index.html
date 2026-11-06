@@ -247,7 +247,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.14</footer>
+  <footer>Мини-приложение DataGraph · v4.15</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -1045,9 +1045,11 @@
       }
       free.forEach(function (x) { put(x, false); });
       busy.forEach(function (x) { put(x, true); });
-      order.sort(function (a, b) { return a.localeCompare(b, 'ru'); }).forEach(function (w) {
+      // цех со своими станками — первым, внутри него участки с выбранными станками тоже выше
+      var mineIn = function (w, u) { return (u ? [u] : Object.keys(groups[w])).some(function (k) { return groups[w][k].free.some(function (x) { return ui.eqPick[x.id]; }); }) ? 0 : 1; };
+      order.sort(function (a, b) { return (mineIn(a) - mineIn(b)) || a.localeCompare(b, 'ru'); }).forEach(function (w) {
         listEl.appendChild(h('div', { style: 'font-weight:700;font-size:16px;margin-top:14px', text: w }));
-        Object.keys(groups[w]).sort(function (a, b) { return a.localeCompare(b, 'ru'); }).forEach(function (u) {
+        Object.keys(groups[w]).sort(function (a, b) { return (mineIn(w, a) - mineIn(w, b)) || a.localeCompare(b, 'ru'); }).forEach(function (u) {
           listEl.appendChild(h('div', { class: 'muted small', style: 'margin-top:8px', text: u }));
           groups[w][u].free.forEach(function (x) {
             var on = !!ui.eqPick[x.id];
