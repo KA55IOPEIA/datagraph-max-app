@@ -247,7 +247,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.5</footer>
+  <footer>Мини-приложение DataGraph · v4.6</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -640,7 +640,7 @@
     });
     var wt = d.week_total || {};
     out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Эта неделя' }), wk, ax,
-      h('div', { class: 'legend' }, legendRow('work', 'В работе', hours(wt.work)), legendRow('idle', 'Простой', hours(wt.nowork)), legendRow('down', 'Выключен', hours(wt.off)))));
+      h('div', { class: 'legend' }, legendRow('work', 'В работе', hours((wt.work || 0) + (wt.high || 0))), legendRow('idle', 'Простой', hours(wt.nowork)), legendRow('down', 'Выключен', hours(wt.off)))));
     var upd = updated(d);
     out.push(typeof upd === 'string' ? h('p', { class: 'muted small', style: 'text-align:center', text: upd }) : h('p', { class: 'muted small', style: 'text-align:center' }, upd));
     return out;
