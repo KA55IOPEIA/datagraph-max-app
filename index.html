@@ -246,7 +246,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.11</footer>
+  <footer>Мини-приложение DataGraph · v4.12</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -417,6 +417,8 @@
     if (sub && sub.type === 'machine') return 'machine:' + sub.id;
     if (sub && sub.type === 'notifs') return 'notifications';
     if (sub && sub.type === 'pickEq') return 'eqopts';
+    if (sub && sub.type === 'events') return 'evs';
+    if (sub && sub.type === 'evTypes') return 'evtypes:' + sub.eq;
     if (tab === 'shifts') return 'shifts:' + ui.shiftsDay;
     if (tab === 'rating') return 'rating:' + ui.ratingEntity + ':' + (ui.ratingMonth || '');
     if (tab === 'profile') return null;
@@ -425,6 +427,8 @@
   function request(key) {
     if (key === 'data') return call('data');
     if (key === 'eqopts') return call('eq_options');
+    if (key === 'evs') return call('ev_state');
+    if (key.indexOf('evtypes:') === 0) return call('ev_types', { eq: key.slice(8) });
     var p = key.split(':');
     if (p[0] === 'machine') return call('machine', { eq: p[1] });
     if (p[0] === 'notifications') return call('notifications');
@@ -926,7 +930,60 @@
     if (!s.equipment.length) c.appendChild(h('div', { class: 'empty', text: 'Станки не назначены. Выберите их кнопкой ниже.' }));
     s.equipment.forEach(function (x) { c.appendChild(eqRow(x, x.unit || '')); });
     out.push(c);
-    if (s.status === 'running') out.push(h('button', { type: 'button', class: 'btn primary', text: s.equipment.length ? 'Изменить станки' : 'Выбрать станки', onclick: openPickEq }));
+    if (s.status === 'running') {
+      if (s.equipment.length) out.push(h('button', { type: 'button', class: 'btn primary', text: 'События', onclick: openEvents }));
+      out.push(h('button', { type: 'button', class: 'btn', text: s.equipment.length ? 'Изменить станки' : 'Выбрать станки', onclick: openPickEq }));
+    }
+    return out;
+  }
+
+  // ===== сотрудник: события на станках своей смены =====
+  function openEvents() { cache.evs = null; loadedAt.evs = 0; openSub({ type: 'events' }); }
+  function evAction(action, extra, done) {
+    if (ui.evBusy) return;
+    ui.evBusy = true; render();
+    call(action, extra).then(function (resp) {
+      if (!resp.ok) throw new Error(resp.message || 'Не получилось.');
+      cache.evs = null; loadedAt.evs = 0; loadedAt.data = 0;
+      done();
+    }).catch(function (e) { appError(e && e.message ? e.message : 'Не получилось.'); loadedAt.evs = 0; })
+      .finally(function () { ui.evBusy = false; render(); ensure(true); });
+  }
+  function screenEvents(d) {
+    var out = [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'), h('h1', { style: 'margin:6px 0 10px', text: 'События' })];
+    if (!d) { out.push(loading()); return out; }
+    if (!d.shift) { out.push(h('div', { class: 'card' }, h('p', { class: 'muted', style: 'margin:0', text: 'Активной смены нет.' }))); return out; }
+    if (d.active.length) {
+      var a = h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Идут сейчас' }));
+      d.active.forEach(function (x) {
+        var mins = x.since ? Math.max(0, (Date.now() - new Date(x.since).getTime()) / 60000) : null;
+        a.appendChild(h('div', { style: 'padding:10px 0' }, h('div', { style: 'font-weight:600', text: x.equipment_name }),
+          h('div', { class: 'muted small', text: x.event_name + (mins != null ? ' · идёт ' + dur(mins) : '') }),
+          h('button', { type: 'button', class: 'btn danger', text: ui.evBusy ? 'Подождите…' : 'Завершить событие', disabled: ui.evBusy ? 'disabled' : null, onclick: function () { evAction('ev_finish', { tsid: x.id }, function () {}); } })));
+      });
+      out.push(a);
+    }
+    if (d.free.length) {
+      var c = h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Запустить событие на станке' }));
+      d.free.forEach(function (x) {
+        c.appendChild(h('button', { type: 'button', class: 'btn', text: x.name, onclick: function () { openSub({ type: 'evTypes', eq: x.id }); } }));
+      });
+      out.push(c);
+    } else if (!d.active.length) out.push(h('div', { class: 'card' }, h('p', { class: 'muted', style: 'margin:0', text: 'В смене нет станков.' })));
+    return out;
+  }
+  function screenEvTypes(d) {
+    var out = [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'), h('h1', { style: 'margin:6px 0 4px', text: 'Какое событие?' })];
+    if (!d) { out.push(loading()); return out; }
+    out.push(h('div', { class: 'muted small', style: 'margin-bottom:10px', text: d.equipment ? d.equipment.name : '' }));
+    if (!d.events || !d.events.length) { out.push(h('div', { class: 'card' }, h('p', { class: 'muted', style: 'margin:0', text: 'Для этого цеха нет событий.' }))); return out; }
+    var c = h('div', { class: 'card' });
+    d.events.forEach(function (x) {
+      c.appendChild(h('button', { type: 'button', class: 'btn', text: ui.evBusy ? 'Подождите…' : x.name, disabled: ui.evBusy ? 'disabled' : null, onclick: function () {
+        evAction('ev_start', { eq: d.equipment.id, ev: x.id }, function () { closeSub(); });
+      } }));
+    });
+    out.push(c);
     return out;
   }
 
@@ -1165,6 +1222,8 @@
     if (sub && sub.type === 'machine') nodes = d ? screenMachine(d) : [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'), loading()];
     else if (sub && sub.type === 'notifs') nodes = screenNotifs(d);
     else if (sub && sub.type === 'pickEq') nodes = screenPickEq(d);
+    else if (sub && sub.type === 'events') nodes = screenEvents(d);
+    else if (sub && sub.type === 'evTypes') nodes = screenEvTypes(d);
     else if (tab === 'shifts') nodes = screenShifts(d);
     else if (tab === 'rating') nodes = screenRating(d);
     else if (tab === 'profile') nodes = screenProfile();
