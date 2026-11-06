@@ -251,7 +251,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.18</footer>
+  <footer>Мини-приложение DataGraph · v4.19</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -641,8 +641,10 @@
     var k = m.kind || 'off';
     out.push(h('div', { class: 'card status-big k-' + k },
       h('div', { class: 'ico' }, icon(k)),
-      h('div', { style: 'flex:1' }, h('span', { class: 'pill', text: KIND[k] }),
-        h('div', { style: 'font-size:22px;font-weight:700;margin-top:4px', text: m.minutes != null ? dur(m.minutes) : '—' }),
+      h('div', { style: 'flex:1;min-width:0' },
+        h('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap' },
+          h('span', { style: 'font-size:22px;font-weight:700', text: m.minutes != null ? dur(m.minutes) : '—' }),
+          h('span', { class: 'pill', text: KIND[k] })),
         h('div', { class: 'muted small', text: [sinceText(m.since), isAdmin() && (k === 'idle' || k === 'off' || k === 'down') && m.threshold ? 'порог уведомления ' + minLabel(m.threshold) : ''].filter(Boolean).join(' · ') })),
       live.connected && live.metrics[m.id] != null ? h('div', { style: 'text-align:right;flex:none' },
         h('div', { id: 'liveCur', style: 'font-size:22px;font-weight:700;font-variant-numeric:tabular-nums', text: amps(live.metrics[m.id]) }),
@@ -662,16 +664,21 @@
     // загрузка за сегодня — по часам
     var nowHour = Number(fmt(new Date().toISOString(), { hour: '2-digit', hour12: false })) || 0;
     var bars = h('div', { class: 'bars', role: 'img', 'aria-label': 'Загрузка по часам за сегодня' });
-    (d.today_hours || []).forEach(function (x) {
+    var sl = d.ctl && d.shift_load && d.shift_load.hours.length ? d.shift_load : null;
+    (sl ? sl.hours : d.today_hours || []).forEach(function (x) {
       var col = h('div', { class: 'col' + (x.empty ? ' nodata' : ''), title: String(x.h).padStart(2, '0') + ':00' });
-      if (x.empty && x.h <= nowHour) col.className = 'col';      // прошедший час без данных
+      if (x.empty && (sl ? !x.future : x.h <= nowHour)) col.className = 'col';      // прошедший час без данных
       if (!x.empty) [['work', x.work], ['high', x.high], ['idle', x.idle], ['down', x.off]].forEach(function (p) { if (p[1]) col.appendChild(h('span', { class: 'k-' + p[0], style: 'height:' + Math.min(100, p[1] / 60 * 100) + '%' })); });
       bars.appendChild(col);
     });
-    var tt = d.today_total || {};
+    var tt = (sl && sl.total) || d.today_total || {};
+    var hh2 = function (x) { return String(x.h).padStart(2, '0'); };
+    var axisEl = sl
+      ? h('div', { class: 'axis' }, h('span', { text: hh2(sl.hours[0]) + ':00' }), h('span', { text: hh2(sl.hours[sl.hours.length - 1]) + ':00' }))
+      : h('div', { class: 'axis' }, h('span', { text: '00' }), h('span', { text: '06' }), h('span', { text: '12' }), h('span', { text: '18' }), h('span', { text: '24' }));
     out.push(h('div', { class: 'card' },
-      h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('p', { class: 'card-title', text: 'Загрузка за сегодня' }), h('span', { class: 'muted small', text: 'по часам' })),
-      bars, h('div', { class: 'axis' }, h('span', { text: '00' }), h('span', { text: '06' }), h('span', { text: '12' }), h('span', { text: '18' }), h('span', { text: '24' })),
+      h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('p', { class: 'card-title', text: sl ? 'Загрузка за смену' : 'Загрузка за сегодня' }), h('span', { class: 'muted small', text: 'по часам' })),
+      bars, axisEl,
       h('div', { class: 'legend' }, legendRow('work', 'В работе', hours((tt.work || 0) + (tt.high || 0))), legendRow('idle', 'Простой', hours(tt.nowork)), legendRow('down', 'Выключен', hours(tt.off)),
         [h('span', { class: 'l' }, h('span', { class: 'dot', style: 'background:var(--c-nodata)' }), 'Нет данных · ещё не наступило'), h('span', { class: 'v', text: '' })])));
     // неделя
