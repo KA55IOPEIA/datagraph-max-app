@@ -246,7 +246,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.8</footer>
+  <footer>Мини-приложение DataGraph · v4.9</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -814,6 +814,34 @@
     });
     return c;
   }
+  function saveChat(extra, apply) {
+    var d = cache.data; if (!d) return;
+    var prev = { kinds: (d.notif_chat || []).slice(), del: d.notif_chat_del };
+    apply(d); render();
+    call('notif_chat', extra).then(function (resp) {
+      if (!resp.ok) throw new Error(resp.message || 'Не удалось сохранить.');
+      d.notif_chat = resp.notif_chat; d.notif_chat_del = resp.notif_chat_del; loadedAt.data = 0;
+    }).catch(function (e) { d.notif_chat = prev.kinds; d.notif_chat_del = prev.del; appError(e && e.message ? e.message : 'Не удалось сохранить.'); })
+      .finally(render);
+  }
+  function chatKindsCard(d) {
+    var on = d.notif_chat || [];
+    var c = h('div', { class: 'card' }, h('div', { style: 'font-weight:600;font-size:16px', text: 'Присылать в чат бота' }),
+      h('div', { class: 'muted small', style: 'margin-bottom:6px', text: 'Придёт сообщением и пушем на телефон, если адресовано вам. Отчёты приходят файлом, высокая нагрузка настраивается выше.' }));
+    d.chat_kinds.forEach(function (k) {
+      var enabled = on.indexOf(k.id) >= 0;
+      c.appendChild(h('div', { style: 'display:flex;align-items:center;gap:12px;padding:8px 0' }, h('div', { style: 'flex:1', text: k.label }),
+        h('button', { type: 'button', class: 'sw', role: 'switch', 'aria-checked': enabled ? 'true' : 'false', 'aria-label': 'В чат: ' + k.label, onclick: function () {
+          saveChat({ cat: k.id, hide: enabled ? '0' : '1' }, function (x) { x.notif_chat = on.filter(function (i) { return i !== k.id; }).concat(enabled ? [] : [k.id]); });
+        } })));
+    });
+    var o = h('div', { class: 'opts' });
+    DELS.forEach(function (x) { o.appendChild(h('button', { type: 'button', 'aria-pressed': d.notif_chat_del === x ? 'true' : 'false', text: minLabel(x), onclick: function () {
+      if (d.notif_chat_del !== x) saveChat({ value: String(x) }, function (y) { y.notif_chat_del = x; });
+    } })); });
+    add(c, [h('div', { class: 'opt-label', text: 'Удалить уведомление из чата через' }), o]);
+    return c;
+  }
   function saveNotif(kind, field, value, el) {
     var d = cache.data; if (!d || !d.notif) return;
     var prev = Object.assign({}, d.notif[kind]);
@@ -867,6 +895,7 @@
       out.push(c);
     });
     if (d && d.site_kinds) out.push(siteKindsCard(d));
+    if (d && d.chat_kinds) out.push(chatKindsCard(d));
     out.push(accountCard());
     out.push(techDetails());
     return out;
