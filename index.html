@@ -247,7 +247,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.15</footer>
+  <footer>Мини-приложение DataGraph · v4.16</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -419,6 +419,7 @@
     if (sub && sub.type === 'notifs') return 'notifications';
     if (sub && sub.type === 'pickEq') return 'eqopts';
     if (sub && sub.type === 'events') return 'evs';
+    if (sub && sub.type === 'evFinish') return null;
     if (sub && sub.type === 'evTypes') return 'evtypes:' + sub.eq;
     if (tab === 'shifts') return 'shifts:' + ui.shiftsDay;
     if (tab === 'rating') return 'rating:' + ui.ratingEntity + ':' + (ui.ratingMonth || '');
@@ -624,8 +625,8 @@
       out.push(h('div', { class: 'card' }, act ? h('div', { style: 'font-weight:600', text: act.event_name }) : null,
         act ? h('div', { class: 'muted small', text: sinceLabel(act.since) }) : null,
         h('button', { type: 'button', class: act ? 'btn danger' : 'btn primary', style: act ? null : 'margin-top:0', disabled: ui.evBusy ? 'disabled' : null, text: ui.evBusy ? 'Подождите…' : act ? 'Завершить событие' : 'Запустить событие', onclick: function () {
-          if (act) evAction('ev_finish', { tsid: act.id }, function () { appNote('Событие завершено'); });
-          else openSub({ type: 'evTypes', eq: m.id });
+          ui.evComment = '';
+          openSub(act ? { type: 'evFinish', tsid: act.id, name: act.event_name, eqName: m.name } : { type: 'evTypes', eq: m.id });
         } })));
     }
     var cur = liveCurrentCard(m.id);
@@ -963,7 +964,9 @@
       if (!resp.ok) throw new Error(resp.message || 'Не получилось.');
       cache.evs = null; loadedAt.evs = 0; loadedAt.data = 0;
       Object.keys(loadedAt).forEach(function (k) { if (k.indexOf('machine:') === 0) loadedAt[k] = 0; });
+      ui.evComment = '';
       done();
+      if (resp.comment_failed) appError('Комментарий сохранить не удалось.');
     }).catch(function (e) { appError(e && e.message ? e.message : 'Не получилось.'); loadedAt.evs = 0; })
       .finally(function () { ui.evBusy = false; render(); ensure(true); });
   }
@@ -976,17 +979,34 @@
       d.active.forEach(function (x) {
         a.appendChild(h('div', { style: 'padding:10px 0' }, h('div', { style: 'font-weight:600', text: x.equipment_name }),
           h('div', { class: 'muted small', text: x.event_name + ' · ' + sinceLabel(x.since) }),
-          h('button', { type: 'button', class: 'btn danger', text: ui.evBusy ? 'Подождите…' : 'Завершить событие', disabled: ui.evBusy ? 'disabled' : null, onclick: function () { evAction('ev_finish', { tsid: x.id }, function () { appNote('Событие завершено'); }); } })));
+          h('button', { type: 'button', class: 'btn danger', text: ui.evBusy ? 'Подождите…' : 'Завершить событие', disabled: ui.evBusy ? 'disabled' : null, onclick: function () { ui.evComment = ''; openSub({ type: 'evFinish', tsid: x.id, name: x.event_name, eqName: x.equipment_name }); } })));
       });
       out.push(a);
     }
     if (d.free.length) {
       var c = h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Запустить событие на станке' }));
       d.free.forEach(function (x) {
-        c.appendChild(h('button', { type: 'button', class: 'btn', text: x.name, onclick: function () { openSub({ type: 'evTypes', eq: x.id }); } }));
+        c.appendChild(h('button', { type: 'button', class: 'btn', text: x.name, onclick: function () { ui.evComment = ''; openSub({ type: 'evTypes', eq: x.id }); } }));
       });
       out.push(c);
     } else if (!d.active.length) out.push(h('div', { class: 'card' }, h('p', { class: 'muted', style: 'margin:0', text: 'В смене нет станков.' })));
+    return out;
+  }
+  // поле с классом search: живое обновление не перерисует экран, пока человек печатает
+  function commentField() {
+    var t = h('textarea', { class: 'search', maxlength: '1000', placeholder: 'Комментарий, если нужен', 'aria-label': 'Комментарий', style: 'height:88px;padding:10px 14px;resize:none;margin-bottom:12px' });
+    t.value = ui.evComment || '';
+    t.addEventListener('input', function () { ui.evComment = t.value; });
+    return t;
+  }
+  function screenEvFinish() {
+    var out = [h('button', { type: 'button', class: 'back', onclick: closeSub }, icon('back'), 'Назад'), h('h1', { style: 'margin:6px 0 4px', text: 'Завершить событие' }),
+      h('div', { class: 'muted small', style: 'margin-bottom:10px', text: [sub.name, sub.eqName].filter(Boolean).join(' · ') })];
+    out.push(commentField());
+    var id = sub.tsid;
+    out.push(h('button', { type: 'button', class: 'btn danger', disabled: ui.evBusy ? 'disabled' : null, text: ui.evBusy ? 'Подождите…' : 'Завершить событие', onclick: function () {
+      evAction('ev_finish', { tsid: id, comment: ui.evComment || '' }, function () { appNote('Событие завершено'); closeSub(); });
+    } }));
     return out;
   }
   function screenEvTypes(d) {
@@ -994,10 +1014,11 @@
     if (!d) { out.push(loading()); return out; }
     out.push(h('div', { class: 'muted small', style: 'margin-bottom:10px', text: d.equipment ? d.equipment.name : '' }));
     if (!d.events || !d.events.length) { out.push(h('div', { class: 'card' }, h('p', { class: 'muted', style: 'margin:0', text: 'Для этого цеха нет событий.' }))); return out; }
+    out.push(commentField());
     var c = h('div', { class: 'card' });
     d.events.forEach(function (x) {
       c.appendChild(h('button', { type: 'button', class: 'btn', text: ui.evBusy ? 'Подождите…' : x.name, disabled: ui.evBusy ? 'disabled' : null, onclick: function () {
-        evAction('ev_start', { eq: d.equipment.id, ev: x.id }, function () { appNote('Событие запущено'); closeSub(); });
+        evAction('ev_start', { eq: d.equipment.id, ev: x.id, comment: ui.evComment || '' }, function () { appNote('Событие запущено'); closeSub(); });
       } }));
     });
     out.push(c);
@@ -1265,6 +1286,7 @@
     else if (sub && sub.type === 'pickEq') nodes = screenPickEq(d);
     else if (sub && sub.type === 'events') nodes = screenEvents(d);
     else if (sub && sub.type === 'evTypes') nodes = screenEvTypes(d);
+    else if (sub && sub.type === 'evFinish') nodes = screenEvFinish();
     else if (tab === 'shifts') nodes = screenShifts(d);
     else if (tab === 'rating') nodes = screenRating(d);
     else if (tab === 'profile') nodes = screenProfile();
