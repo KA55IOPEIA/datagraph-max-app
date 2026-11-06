@@ -75,6 +75,7 @@
   .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: 1px; animation: livepulse 2s ease-in-out infinite; }
   @keyframes livepulse { 50% { opacity: .35; } }
   @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+  .side .amp { display: block; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .spark { height: 56px; margin-top: 8px; } .spark svg { display: block; width: 100%; height: 100%; }
   .note { border-radius: 14px; padding: 12px 14px; font-size: 14px; margin: 0 0 12px; }
   .note.ok { background: var(--ok-bg); color: var(--ok); }
@@ -246,7 +247,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.4</footer>
+  <footer>Мини-приложение DataGraph · v4.5</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -496,7 +497,14 @@
     return h('button', { type: 'button', class: 'row k-' + k, onclick: function () { openMachine(x.id); } },
       h('span', { class: 'dot' }),
       h('div', { class: 'main' }, h('b', { text: x.name }), (subText != null ? subText : [x.workshop || x.unit, x.operator].filter(Boolean).join(' · ')) ? h('span', { text: subText != null ? subText : [x.workshop || x.unit, x.operator].filter(Boolean).join(' · ') }) : null),
-      h('div', { class: 'side' }, h('span', { class: 'pill', text: KIND_SHORT[k] }), x.minutes != null ? h('span', { class: 't', title: sinceText(x.since), text: dur(x.minutes) }) : null));
+      h('div', { class: 'side' }, h('span', { class: 'pill', text: KIND_SHORT[k] }),
+        x.minutes != null ? h('span', { class: 't', title: sinceText(x.since), text: dur(x.minutes) }) : null,
+        live.connected ? h('span', { class: 'amp', 'data-amp': x.id, text: ampText(x.id) }) : null));
+  }
+  // «Нагрузка», как на сайте: ток с датчика из веб-сокета; без данных — «нет данных»
+  function ampText(id) { return live.metrics[id] != null ? amps(live.metrics[id]) : 'нет данных'; }
+  function drawAmps() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-amp]'), function (e) { var t = ampText(e.getAttribute('data-amp')); if (e.textContent !== t) e.textContent = t; });
   }
   function stack(parts) {   // parts: [[kind, value]]
     var total = parts.reduce(function (s, p) { return s + (p[1] || 0); }, 0);
@@ -822,13 +830,15 @@
       var c = h('div', { class: 'card' },
         h('div', { style: 'display:flex;align-items:center;gap:12px' },
           h('span', { class: 'dot k-' + k, style: 'width:10px;height:10px' }),
-          h('div', { style: 'flex:1' }, h('div', { style: 'font-weight:600;font-size:16px', text: m[1] }), h('div', { class: 'muted small', text: v.enabled ? 'дольше ' + minLabel(v.min) + ' · удалить через ' + minLabel(v.del) : 'выключены' })),
+          h('div', { style: 'flex:1' }, h('div', { style: 'font-weight:600;font-size:16px', text: m[1] }), h('div', { class: 'muted small', text: v.enabled ? (k === 'high' ? 'приходят сразу, как на сайте' : 'дольше ' + minLabel(v.min)) + ' · удалить через ' + minLabel(v.del) : 'выключены' })),
           h('button', { type: 'button', class: 'sw', role: 'switch', 'aria-checked': v.enabled ? 'true' : 'false', 'aria-label': 'Уведомления: ' + m[1], onclick: function () { saveNotif(k, 'enabled', v.enabled ? 0 : 1); } })));
       if (v.enabled) {
         var o1 = h('div', { class: 'opts' }), o2 = h('div', { class: 'opts' });
         MINS.forEach(function (x) { o1.appendChild(h('button', { type: 'button', 'aria-pressed': v.min === x ? 'true' : 'false', text: minLabel(x), onclick: function () { if (v.min !== x) saveNotif(k, 'min', x); } })); });
         DELS.forEach(function (x) { o2.appendChild(h('button', { type: 'button', 'aria-pressed': v.del === x ? 'true' : 'false', text: minLabel(x), onclick: function () { if (v.del !== x) saveNotif(k, 'del', x); } })); });
-        add(c, [h('div', { class: 'opt-label', text: k === 'down' ? 'Порог — станок на смене выключен дольше' : 'Порог — сообщение придёт, если дольше' }), o1, h('div', { class: 'opt-label', text: 'Удалить уведомление из чата через' }), o2]);
+        // у высокой нагрузки порога нет: сайт DataGraph присылает её сразу
+        if (k !== 'high') add(c, [h('div', { class: 'opt-label', text: k === 'down' ? 'Порог — станок на смене выключен дольше' : 'Порог — сообщение придёт, если дольше' }), o1]);
+        add(c, [h('div', { class: 'opt-label', text: 'Удалить уведомление из чата через' }), o2]);
       }
       out.push(c);
     });
@@ -945,6 +955,7 @@
         hs.push([t, v]); while (hs.length && t - hs[0][0] > 180000) hs.shift();   // 3 минуты
       });
       if (sub && sub.type === 'machine') drawCurrent(sub.id);
+      drawAmps();
     } else if (ch === 'notifications') {
       var first = live.notifFirst; live.notifFirst = false;
       var arr = Array.isArray(d) ? d : [d];
