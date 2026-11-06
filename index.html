@@ -243,10 +243,11 @@
 
   <div id="vApp" hidden>
     <div class="note err" id="appError" hidden></div>
+    <div class="note ok" id="appNote" hidden></div>
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.13</footer>
+  <footer>Мини-приложение DataGraph · v4.14</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -457,6 +458,9 @@
       .finally(function () { busy[key] = false; if (profile && profile.state === 'authorized') render(); });
   }
   function appError(msg) { $('appError').textContent = msg; $('appError').hidden = false; }
+  var noteTimer = null;
+  function appNote(msg) { var e = $('appNote'); e.textContent = msg; e.hidden = false; clearTimeout(noteTimer); noteTimer = setTimeout(function () { e.hidden = true; }, 4000); }
+  function sinceLabel(iso) { var m = iso ? (Date.now() - new Date(iso).getTime()) / 60000 : null; return m == null ? '' : m < 1 ? 'только что' : 'идёт ' + dur(m); }
   function startTimer() {
     if (timer) clearInterval(timer);
     timer = setInterval(function () {
@@ -614,12 +618,21 @@
       h('div', { class: 'ico' }, icon(k)),
       h('div', { style: 'flex:1' }, h('span', { class: 'pill', text: KIND[k] }),
         h('div', { style: 'font-size:22px;font-weight:700;margin-top:4px', text: m.minutes != null ? dur(m.minutes) : '—' }),
-        h('div', { class: 'muted small', text: [sinceText(m.since), (k === 'idle' || k === 'off' || k === 'down') && m.threshold ? 'порог уведомления ' + minLabel(m.threshold) : ''].filter(Boolean).join(' · ') }))));
+        h('div', { class: 'muted small', text: [sinceText(m.since), isAdmin() && (k === 'idle' || k === 'off' || k === 'down') && m.threshold ? 'порог уведомления ' + minLabel(m.threshold) : ''].filter(Boolean).join(' · ') }))));
+    if (d.ctl) {
+      var act = d.ctl.active;
+      out.push(h('div', { class: 'card' }, act ? h('div', { style: 'font-weight:600', text: act.event_name }) : null,
+        act ? h('div', { class: 'muted small', text: sinceLabel(act.since) }) : null,
+        h('button', { type: 'button', class: act ? 'btn danger' : 'btn primary', style: act ? null : 'margin-top:0', disabled: ui.evBusy ? 'disabled' : null, text: ui.evBusy ? 'Подождите…' : act ? 'Завершить событие' : 'Запустить событие', onclick: function () {
+          if (act) evAction('ev_finish', { tsid: act.id }, function () { appNote('Событие завершено'); });
+          else openSub({ type: 'evTypes', eq: m.id });
+        } })));
+    }
     var cur = liveCurrentCard(m.id);
     if (cur) out.push(cur);
     var shiftBox = h('div', { class: 'kv' });
     if (m.shift) add(shiftBox, [h('span', { class: 'muted', text: 'Оператор' }), h('span', { text: m.shift.user || '—' }), h('span', { class: 'muted', text: 'Смена' }), h('span', { text: m.shift.title || (m.shift.start && m.shift.finish ? hm(m.shift.start) + '–' + hm(m.shift.finish) : '—') })]);
-    out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Смена' }), m.shift ? shiftBox : h('div', { class: 'muted small', text: 'Сейчас станок ни за кем не закреплён.' })));
+    if (!d.ctl) out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Смена' }), m.shift ? shiftBox : h('div', { class: 'muted small', text: 'Сейчас станок ни за кем не закреплён.' })));
     // загрузка за сегодня — по часам
     var nowHour = Number(fmt(new Date().toISOString(), { hour: '2-digit', hour12: false })) || 0;
     var bars = h('div', { class: 'bars', role: 'img', 'aria-label': 'Загрузка по часам за сегодня' });
@@ -644,7 +657,7 @@
       wk.appendChild(col); ax.appendChild(h('span', { class: x.today ? 'on' : null, text: DOW[i] }));
     });
     var wt = d.week_total || {};
-    out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Эта неделя' }), wk, ax,
+    if (isAdmin()) out.push(h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Эта неделя' }), wk, ax,
       h('div', { class: 'legend' }, legendRow('work', 'В работе', hours((wt.work || 0) + (wt.high || 0))), legendRow('idle', 'Простой', hours(wt.nowork)), legendRow('down', 'Выключен', hours(wt.off)))));
     var upd = updated(d);
     out.push(typeof upd === 'string' ? h('p', { class: 'muted small', style: 'text-align:center', text: upd }) : h('p', { class: 'muted small', style: 'text-align:center' }, upd));
@@ -915,7 +928,7 @@
 
   // ===== сотрудник: «Смена» =====
   function screenMyShift(d) {
-    var out = [header('Моя смена', updated(d), 'data', true)];
+    var out = [header('Смена', updated(d), 'data', true)];
     var s = d.my_shift;
     if (!s) { out.push(h('div', { class: 'card' }, h('h2', { text: 'Активной смены нет' }), h('p', { class: 'muted', style: 'margin:4px 0 0', text: 'Смена назначается на сайте DataGraph.' }))); return out; }
     var start = s.start ? new Date(s.start).getTime() : null, finish = s.finish ? new Date(s.finish).getTime() : null, now = Date.now();
@@ -928,11 +941,15 @@
     var c = h('div', { class: 'card list' });
     c.appendChild(h('div', { style: 'display:flex;justify-content:space-between;padding-top:10px' }, h('span', { style: 'font-weight:600', text: 'Мои станки' }), h('span', { class: 'muted small', text: String(s.equipment.length) })));
     if (!s.equipment.length) c.appendChild(h('div', { class: 'empty', text: 'Станки не назначены. Выберите их кнопкой ниже.' }));
-    s.equipment.forEach(function (x) { c.appendChild(eqRow(x, x.unit || '')); });
+    var evByEq = {};
+    (d.my_events || []).forEach(function (e) { evByEq[e.equipment_id] = e; });
+    s.equipment.forEach(function (x) { var e = evByEq[x.id]; c.appendChild(eqRow(x, e ? e.event_name + ' · ' + sinceLabel(e.since) : (x.unit || ''))); });
     out.push(c);
     if (s.status === 'running') {
-      if (s.equipment.length) out.push(h('button', { type: 'button', class: 'btn primary', text: 'События', onclick: openEvents }));
-      out.push(h('button', { type: 'button', class: 'btn', text: s.equipment.length ? 'Изменить станки' : 'Выбрать станки', onclick: openPickEq }));
+      if (s.equipment.length) {
+        out.push(h('button', { type: 'button', class: 'btn primary', text: 'События', onclick: openEvents }));
+        out.push(h('div', { style: 'text-align:center;margin-top:6px' }, h('button', { type: 'button', class: 'linkbtn', text: 'Изменить станки', onclick: openPickEq })));
+      } else out.push(h('button', { type: 'button', class: 'btn primary', text: 'Выбрать станки', onclick: openPickEq }));
     }
     return out;
   }
@@ -945,6 +962,7 @@
     call(action, extra).then(function (resp) {
       if (!resp.ok) throw new Error(resp.message || 'Не получилось.');
       cache.evs = null; loadedAt.evs = 0; loadedAt.data = 0;
+      Object.keys(loadedAt).forEach(function (k) { if (k.indexOf('machine:') === 0) loadedAt[k] = 0; });
       done();
     }).catch(function (e) { appError(e && e.message ? e.message : 'Не получилось.'); loadedAt.evs = 0; })
       .finally(function () { ui.evBusy = false; render(); ensure(true); });
@@ -956,10 +974,9 @@
     if (d.active.length) {
       var a = h('div', { class: 'card' }, h('p', { class: 'card-title', text: 'Идут сейчас' }));
       d.active.forEach(function (x) {
-        var mins = x.since ? Math.max(0, (Date.now() - new Date(x.since).getTime()) / 60000) : null;
         a.appendChild(h('div', { style: 'padding:10px 0' }, h('div', { style: 'font-weight:600', text: x.equipment_name }),
-          h('div', { class: 'muted small', text: x.event_name + (mins != null ? ' · идёт ' + dur(mins) : '') }),
-          h('button', { type: 'button', class: 'btn danger', text: ui.evBusy ? 'Подождите…' : 'Завершить событие', disabled: ui.evBusy ? 'disabled' : null, onclick: function () { evAction('ev_finish', { tsid: x.id }, function () {}); } })));
+          h('div', { class: 'muted small', text: x.event_name + ' · ' + sinceLabel(x.since) }),
+          h('button', { type: 'button', class: 'btn danger', text: ui.evBusy ? 'Подождите…' : 'Завершить событие', disabled: ui.evBusy ? 'disabled' : null, onclick: function () { evAction('ev_finish', { tsid: x.id }, function () { appNote('Событие завершено'); }); } })));
       });
       out.push(a);
     }
@@ -980,7 +997,7 @@
     var c = h('div', { class: 'card' });
     d.events.forEach(function (x) {
       c.appendChild(h('button', { type: 'button', class: 'btn', text: ui.evBusy ? 'Подождите…' : x.name, disabled: ui.evBusy ? 'disabled' : null, onclick: function () {
-        evAction('ev_start', { eq: d.equipment.id, ev: x.id }, function () { closeSub(); });
+        evAction('ev_start', { eq: d.equipment.id, ev: x.id }, function () { appNote('Событие запущено'); closeSub(); });
       } }));
     });
     out.push(c);
@@ -996,6 +1013,7 @@
     call('eq_save', { ids: ids.join(',') }).then(function (resp) {
       if (!resp.ok) throw new Error(resp.message || 'Не удалось сохранить.');
       ui.eqPick = null; cache.eqopts = null; loadedAt.eqopts = 0; loadedAt.data = 0;
+      appNote('Станки сохранены');
       closeSub();
     }).catch(function (e) { appError(e && e.message ? e.message : 'Не удалось сохранить.'); loadedAt.eqopts = 0; })
       .finally(function () { ui.eqSaving = false; render(); });
@@ -1017,14 +1035,30 @@
       var hit = function (x) { return !q || (x.name + ' ' + (x.place || '')).toLowerCase().indexOf(q) >= 0; };
       listEl.textContent = '';
       var free = d.selectable.filter(hit), busy = d.occupied.filter(hit);
-      free.forEach(function (x) {
-        var on = !!ui.eqPick[x.id];
-        listEl.appendChild(h('div', { style: 'display:flex;align-items:center;gap:12px;padding:10px 0' },
-          h('div', { style: 'flex:1;min-width:0' }, h('div', { style: 'font-weight:600', text: x.name }), x.place ? h('div', { class: 'muted small', text: x.place }) : null),
-          h('button', { type: 'button', class: 'sw', role: 'switch', 'aria-checked': on ? 'true' : 'false', 'aria-label': x.name, onclick: function () { ui.eqPick[x.id] = !on; drawList(); drawSave(); } })));
-      });
-      busy.forEach(function (x) {
-        listEl.appendChild(h('div', { style: 'padding:10px 0;opacity:.55' }, h('div', { style: 'font-weight:600', text: x.name }), h('div', { class: 'muted small', text: 'занят: ' + (x.by || 'другая смена') })));
+      // цех → участок; внутри участка сначала свободные, занятые в конце
+      var groups = {}, order = [];
+      function put(x, isBusy) {
+        var w = x.workshop || 'Без цеха', u = x.unit || 'Без участка';
+        if (!groups[w]) { groups[w] = {}; order.push(w); }
+        if (!groups[w][u]) groups[w][u] = { free: [], busy: [] };
+        groups[w][u][isBusy ? 'busy' : 'free'].push(x);
+      }
+      free.forEach(function (x) { put(x, false); });
+      busy.forEach(function (x) { put(x, true); });
+      order.sort(function (a, b) { return a.localeCompare(b, 'ru'); }).forEach(function (w) {
+        listEl.appendChild(h('div', { style: 'font-weight:700;font-size:16px;margin-top:14px', text: w }));
+        Object.keys(groups[w]).sort(function (a, b) { return a.localeCompare(b, 'ru'); }).forEach(function (u) {
+          listEl.appendChild(h('div', { class: 'muted small', style: 'margin-top:8px', text: u }));
+          groups[w][u].free.forEach(function (x) {
+            var on = !!ui.eqPick[x.id];
+            listEl.appendChild(h('div', { style: 'display:flex;align-items:center;gap:12px;padding:8px 0' },
+              h('div', { style: 'flex:1;min-width:0;font-weight:600', text: x.name }),
+              h('button', { type: 'button', class: 'sw', role: 'switch', 'aria-checked': on ? 'true' : 'false', 'aria-label': x.name, onclick: function () { ui.eqPick[x.id] = !on; drawList(); drawSave(); } })));
+          });
+          groups[w][u].busy.forEach(function (x) {
+            listEl.appendChild(h('div', { style: 'padding:8px 0;opacity:.55' }, h('div', { style: 'font-weight:600', text: x.name }), h('div', { class: 'muted small', text: 'занят: ' + (x.by || 'другая смена') })));
+          });
+        });
       });
       if (!free.length && !busy.length) listEl.appendChild(h('div', { class: 'empty', text: 'Ничего не найдено.' }));
     }
