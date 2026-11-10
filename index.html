@@ -6,6 +6,8 @@
 <title>DataGraph</title>
 <!-- MAX Bridge: даёт странице window.WebApp — кто открыл (initData с подписью), платформа, кнопка «Назад» -->
 <script src="https://st.max.ru/js/max-web-app.js"></script>
+<!-- Telegram: данные запуска приходят в адресе (#tgWebAppData=…); свой скрипт подключаем только там -->
+<script>if (/tgWebAppData=/.test(location.hash)) document.write('<script src="https://telegram.org/js/telegram-web-app.js"><\/script>');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -251,7 +253,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.22</footer>
+  <footer>Мини-приложение DataGraph · v4.23</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -260,8 +262,12 @@
   'use strict';
   var API = 'https://extra-n8n.tw1.ru/webhook/max-miniapp';   // Workflow 9 в n8n
   var REFRESH_MS = 60000;
-  var WA = window.WebApp || null;
-  var initData = (WA && WA.initData) || '';
+  // Откуда открыто: Telegram кладёт подписанные данные в адрес, MAX отдаёт их через свой скрипт
+  var TG_INIT = (function () { var m = location.hash.slice(1).match(/(?:^|&)tgWebAppData=([^&]*)/); try { return m ? decodeURIComponent(m[1]) : ''; } catch (e) { return ''; } })();
+  var PLATFORM = TG_INIT ? 'tg' : 'max';
+  var WA = PLATFORM === 'tg' ? ((window.Telegram && window.Telegram.WebApp) || null) : (window.WebApp || null);
+  var initData = PLATFORM === 'tg' ? TG_INIT : ((WA && WA.initData) || '');
+  if (PLATFORM === 'tg' && WA) { try { WA.ready(); WA.expand(); } catch (e) { /* старый клиент */ } }
   var $ = function (id) { return document.getElementById(id); };
 
   // ---------- DOM: всё через textContent, данные в разметку не вставляются ----------
@@ -351,7 +357,7 @@
   // ---------- API ----------
   // form-urlencoded — «простой» запрос, браузер не шлёт предварительный OPTIONS
   function call(action, extra) {
-    var body = new URLSearchParams(Object.assign({ init: initData, action: action }, extra || {}));
+    var body = new URLSearchParams(Object.assign({ init: initData, action: action, platform: PLATFORM }, extra || {}));
     var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
     var t = ctrl ? setTimeout(function () { ctrl.abort(); }, 45000) : null;
     return fetch(API, { method: 'POST', body: body, signal: ctrl ? ctrl.signal : undefined, cache: 'no-store' })
@@ -878,6 +884,23 @@
     });
     return c;
   }
+  // куда присылать уведомления: показывается, только если человек вошёл и в MAX, и в Telegram
+  function deliveryCard(d) {
+    var sel = h('select', { class: 'select', 'aria-label': 'Куда присылать уведомления', style: 'height:44px;width:100%;margin-top:10px;background:var(--field)' });
+    [['both', 'В MAX и Telegram'], ['max', 'Только в MAX'], ['tg', 'Только в Telegram']].forEach(function (o) {
+      var op = h('option', { value: o[0], text: o[1] }); if (d.delivery.target === o[0]) op.selected = true; sel.appendChild(op);
+    });
+    sel.addEventListener('change', function () {
+      var prev = d.delivery.target, next = sel.value;
+      d.delivery = { target: next };
+      call('delivery_set', { target: next }).then(function (resp) {
+        if (!resp.ok) throw new Error(resp.message || 'Не удалось сохранить.');
+        d.delivery = resp.delivery || d.delivery; appNote('Сохранено');
+      }).catch(function (e) { d.delivery = { target: prev }; appError(e && e.message ? e.message : 'Не удалось сохранить.'); render(); });
+    });
+    return h('div', { class: 'card' }, h('div', { style: 'font-weight:600;font-size:16px', text: 'Куда присылать уведомления' }),
+      h('div', { class: 'muted small', text: 'Вы вошли и в MAX, и в Telegram. Простои, нет связи и уведомления сайта придут сюда.' }), sel);
+  }
   function saveChat(extra, apply) {
     var d = cache.data; if (!d) return;
     var prev = { kinds: (d.notif_chat || []).slice(), del: d.notif_chat_del };
@@ -935,7 +958,7 @@
   function techDetails() {
     var u = (WA && WA.initDataUnsafe) || {};
     var kv = h('div', { class: 'kv' });
-    [['Платформа', (WA && WA.platform) || '—'], ['Версия MAX', (WA && WA.version) || '—'], ['ID пользователя MAX', u.user && u.user.id != null ? String(u.user.id) : '—']].forEach(function (f) { add(kv, [h('span', { text: f[0] }), h('span', { text: f[1] })]); });
+    [['Платформа', (WA && WA.platform) || '—'], [PLATFORM === 'tg' ? 'Версия Telegram' : 'Версия MAX', (WA && WA.version) || '—'], [PLATFORM === 'tg' ? 'ID пользователя Telegram' : 'ID пользователя MAX', u.user && u.user.id != null ? String(u.user.id) : '—']].forEach(function (f) { add(kv, [h('span', { text: f[0] }), h('span', { text: f[1] })]); });
     return h('details', null, h('summary', { text: 'Технические данные' }), kv);
   }
   function screenSettings(d) {
@@ -960,6 +983,7 @@
     });
     if (d && d.site_kinds) out.push(siteKindsCard(d));
     if (d && d.chat_kinds) out.push(chatKindsCard(d));
+    if (d && d.delivery) out.push(deliveryCard(d));
     out.push(accountCard());
     out.push(techDetails());
     return out;
@@ -967,6 +991,7 @@
   function screenProfile() {
     var d = cache.data, out = [h('h1', { style: 'margin-bottom:14px', text: 'Профиль' })];
     if (d && d.chat_kinds) out.push(chatKindsCard(d));
+    if (d && d.delivery) out.push(deliveryCard(d));
     out.push(accountCard()); out.push(techDetails());
     return out;
   }
