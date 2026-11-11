@@ -253,7 +253,7 @@
     <div id="screen"></div>
   </div>
 
-  <footer>Мини-приложение DataGraph · v4.23</footer>
+  <footer>Мини-приложение DataGraph · v4.24</footer>
 </main>
 <nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn" role="tablist"></div></nav>
 
@@ -562,6 +562,19 @@
     } catch (e) { if (set !== undefined) ui.attClosed = set; }
     return !!ui.attClosed;
   }
+  // подпункты «Обратите внимание» сворачиваются по отдельности; какие свёрнуты — тоже на устройстве
+  function attKindClosed(kind, set) {
+    if (!ui.attKinds) { try { ui.attKinds = JSON.parse(localStorage.getItem('dg_att_kinds_closed') || '[]'); } catch (e) { ui.attKinds = []; } }
+    if (set !== undefined) {
+      ui.attKinds = ui.attKinds.filter(function (k) { return k !== kind; }).concat(set ? [kind] : []);
+      try { localStorage.setItem('dg_att_kinds_closed', JSON.stringify(ui.attKinds)); } catch (e) {}
+    }
+    return ui.attKinds.indexOf(kind) >= 0;
+  }
+  function chevron(closed, size) {
+    var c = icon('chevron'); c.setAttribute('style', 'width:' + size + 'px;height:' + size + 'px;flex:none;transition:transform .15s;transform:rotate(' + (closed ? 90 : -90) + 'deg)');
+    return c;
+  }
   function screenNow(d) {
     var s = d.summary || {}, out = [];
     out.push(header('Сейчас', updated(d), 'data', true));
@@ -586,14 +599,22 @@
     var att = d.attention || [], th = d.thresholds || {};
     // свёрнутый список запоминается на устройстве; число остаётся видно и в свёрнутом виде
     var attClosed = attCollapsed();
-    var chev = icon('chevron'); chev.setAttribute('style', 'width:18px;height:18px;flex:none;transition:transform .15s;transform:rotate(' + (attClosed ? 90 : -90) + 'deg)');
     var ac = h('div', { class: 'card' },
       h('button', { type: 'button', 'aria-expanded': attClosed ? 'false' : 'true', style: 'display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;padding:0;cursor:pointer;text-align:left', onclick: function () { attCollapsed(!attClosed); render(); } },
-        h('p', { class: 'card-title', style: 'flex:1;margin:0', text: 'Обратите внимание' }), att.length ? h('span', { class: 'pill k-idle', text: String(att.length) }) : null, chev),
-      attClosed ? null : h('div', { class: 'muted small', text: 'Дольше вашего порога: простой ' + minLabel(th.idle || 20) + ', нет связи ' + minLabel(th.off || 30) + ', выключен на смене ' + minLabel(th.down || 60) }));
+        h('p', { class: 'card-title', style: 'flex:1;margin:0', text: 'Обратите внимание' }), att.length ? h('span', { class: 'pill k-idle', text: String(att.length) }) : null, chevron(attClosed, 18)));
     if (!attClosed && !att.length) ac.appendChild(h('div', { class: 'empty', text: 'Всё в порядке — дольше порога никто не стоит.' }));
-    if (!attClosed) att.slice(0, 8).forEach(function (x) { ac.appendChild(eqRow(x)); });
-    if (!attClosed && att.length > 8) ac.appendChild(h('button', { type: 'button', class: 'btn', text: 'Показать все (' + att.length + ')', onclick: function () { ui.eqFilter = 'all'; setTab('equipment'); } }));
+    if (!attClosed) [['idle', 'Простой', 'дольше ' + minLabel(th.idle || 20)], ['down', 'Выключен на смене', 'дольше ' + minLabel(th.down || 60)], ['off', 'Нет связи', 'дольше ' + minLabel(th.off || 30)]].forEach(function (g) {
+      var list = att.filter(function (x) { return x.kind === g[0]; });
+      if (!list.length) return;
+      var closed = attKindClosed(g[0]);
+      ac.appendChild(h('button', { type: 'button', 'aria-expanded': closed ? 'false' : 'true', style: 'display:flex;align-items:center;gap:8px;width:100%;border:none;border-top:1px solid var(--line);background:none;padding:12px 0 6px;margin-top:8px;cursor:pointer;text-align:left;color:inherit', onclick: function () { attKindClosed(g[0], !closed); render(); } },
+        h('span', { class: 'dot k-' + g[0], style: 'width:10px;height:10px' }),
+        h('span', { style: 'flex:1;font-weight:600;font-size:15px' }, g[1], h('span', { class: 'muted small', style: 'font-weight:400;margin-left:6px', text: g[2] })),
+        h('span', { class: 'pill', text: String(list.length) }), chevron(closed, 16)));
+      if (closed) return;
+      list.slice(0, 8).forEach(function (x) { ac.appendChild(eqRow(x)); });
+      if (list.length > 8) ac.appendChild(h('button', { type: 'button', class: 'btn', text: 'Показать все (' + list.length + ')', onclick: function () { ui.eqFilter = g[0]; setTab('equipment'); } }));
+    });
     out.push(ac);
     var t = d.today || {};
     var sum = (t.work || 0) + (t.high || 0) + (t.nowork || 0) + (t.off || 0);
@@ -884,22 +905,29 @@
     });
     return c;
   }
-  // куда присылать уведомления: показывается, только если человек вошёл и в MAX, и в Telegram
-  function deliveryCard(d) {
-    var sel = h('select', { class: 'select', 'aria-label': 'Куда присылать уведомления', style: 'height:44px;width:100%;margin-top:10px;background:var(--field)' });
+  // куда присылать уведомления и отчёты: показывается, только если человек вошёл и в MAX, и в Telegram
+  function deliverySelect(d, field, label) {
+    var sel = h('select', { class: 'select', 'aria-label': label, style: 'height:44px;width:100%;margin-top:6px;background:var(--field)' });
     [['both', 'В MAX и Telegram'], ['max', 'Только в MAX'], ['tg', 'Только в Telegram']].forEach(function (o) {
-      var op = h('option', { value: o[0], text: o[1] }); if (d.delivery.target === o[0]) op.selected = true; sel.appendChild(op);
+      var op = h('option', { value: o[0], text: o[1] }); if (d.delivery[field] === o[0]) op.selected = true; sel.appendChild(op);
     });
     sel.addEventListener('change', function () {
-      var prev = d.delivery.target, next = sel.value;
-      d.delivery = { target: next };
-      call('delivery_set', { target: next }).then(function (resp) {
+      var prev = Object.assign({}, d.delivery), next = sel.value, p = {};
+      p[field] = next; d.delivery[field] = next;
+      call('delivery_set', p).then(function (resp) {
         if (!resp.ok) throw new Error(resp.message || 'Не удалось сохранить.');
         d.delivery = resp.delivery || d.delivery; appNote('Сохранено');
-      }).catch(function (e) { d.delivery = { target: prev }; appError(e && e.message ? e.message : 'Не удалось сохранить.'); render(); });
+      }).catch(function (e) { d.delivery = prev; appError(e && e.message ? e.message : 'Не удалось сохранить.'); render(); });
     });
-    return h('div', { class: 'card' }, h('div', { style: 'font-weight:600;font-size:16px', text: 'Куда присылать уведомления' }),
-      h('div', { class: 'muted small', text: 'Вы вошли и в MAX, и в Telegram. Простои, нет связи и уведомления сайта придут сюда.' }), sel);
+    return sel;
+  }
+  function deliveryCard(d) {
+    var c = h('div', { class: 'card' }, h('div', { style: 'font-weight:600;font-size:16px', text: 'Куда присылать' }),
+      h('div', { class: 'muted small', text: 'Вы вошли и в MAX, и в Telegram.' }),
+      h('div', { class: 'opt-label', text: 'Уведомления: простои, нет связи, уведомления сайта' }), deliverySelect(d, 'target', 'Куда присылать уведомления'));
+    if (d.delivery.reports) add(c, [h('div', { class: 'opt-label', text: 'Отчёты по расписанию' }), deliverySelect(d, 'reports', 'Куда присылать отчёты'),
+      h('div', { class: 'muted small', style: 'margin-top:6px', text: 'Отчёт, заказанный кнопкой, придёт туда, где вы её нажали.' })]);
+    return c;
   }
   function saveChat(extra, apply) {
     var d = cache.data; if (!d) return;
